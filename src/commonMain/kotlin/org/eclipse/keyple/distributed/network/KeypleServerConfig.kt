@@ -1,3 +1,14 @@
+/* **************************************************************************************
+ * Copyright (c) 2024 Calypso Networks Association https://calypsonet.org/
+ *
+ * See the NOTICE file(s) distributed with this work for additional information
+ * regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the terms of the
+ * Eclipse Public License 2.0 which is available at http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ ************************************************************************************** */
 package org.eclipse.keyple.distributed.network
 
 import org.eclipse.keyple.distributed.protocol.LogLevel
@@ -10,6 +21,7 @@ data class KeypleServerConfig(
     // TODO: authent
     val basicAuth: String? = null,
 ) {
-    fun baseUrl() = "${host}:${port}"
-    fun serviceUrl() = "${baseUrl()}${endpoint}"
+  fun baseUrl() = "${host}:${port}"
+
+  fun serviceUrl() = "${baseUrl()}${endpoint}"
 }

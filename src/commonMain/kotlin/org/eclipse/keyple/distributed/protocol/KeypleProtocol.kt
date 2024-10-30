@@ -1,3 +1,14 @@
+/* **************************************************************************************
+ * Copyright (c) 2024 Calypso Networks Association https://calypsonet.org/
+ *
+ * See the NOTICE file(s) distributed with this work for additional information
+ * regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the terms of the
+ * Eclipse Public License 2.0 which is available at http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ ************************************************************************************** */
 package org.eclipse.keyple.distributed.protocol
 
 import kotlinx.serialization.Serializable
@@ -5,17 +16,22 @@ import kotlinx.serialization.Serializable
 const val API_LEVEL = 3
 const val CORE_API_LEVEL = 2
 
-const val EXECUTE_REMOTE_SERVICE = "EXECUTE_REMOTE_SERVICE";
-const val END_REMOTE_SERVICE = "END_REMOTE_SERVICE";
-const val RESP = "RESP";
+const val EXECUTE_REMOTE_SERVICE = "EXECUTE_REMOTE_SERVICE"
 
-const val IS_CONTACTLESS = "IS_CONTACTLESS";
-const val IS_CARD_PRESENT = "IS_CARD_PRESENT";
-const val TRANSMIT_CARD_SELECTION_REQUESTS = "TRANSMIT_CARD_SELECTION_REQUESTS";
+const val END_REMOTE_SERVICE = "END_REMOTE_SERVICE"
+
+const val RESP = "RESP"
+
+const val IS_CONTACTLESS = "IS_CONTACTLESS"
+
+const val IS_CARD_PRESENT = "IS_CARD_PRESENT"
+
+const val TRANSMIT_CARD_SELECTION_REQUESTS = "TRANSMIT_CARD_SELECTION_REQUESTS"
+
 const val TRANSMIT_CARD_REQUEST = "TRANSMIT_CARD_REQUEST"
 
 @Serializable
-data class MessageDTO (
+data class MessageDTO(
     var apiLevel: Int = API_LEVEL,
     var sessionId: String,
     var action: String,
@@ -27,7 +43,7 @@ data class MessageDTO (
 )
 
 @Serializable
-data class ExecuteRemoteServiceBody<T> (
+data class ExecuteRemoteServiceBody<T>(
     val coreApiLevel: Int,
     val serviceId: String,
     val isReaderContactless: Boolean = true,
@@ -35,27 +51,26 @@ data class ExecuteRemoteServiceBody<T> (
 )
 
 @Serializable
-data class Error (
+data class Error(
     val message: String? = null,
     val code: ErrorCode,
 )
 
 @Serializable
 enum class ErrorCode {
-    READER_COMMUNICATION_ERROR,
-    CARD_COMMUNICATION_ERROR,
-    CARD_COMMAND_ERROR,
+  READER_COMMUNICATION_ERROR,
+  CARD_COMMUNICATION_ERROR,
+  CARD_COMMAND_ERROR,
 }
 
-
 @Serializable
-data class CmdBody (
+data class CmdBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String,
 )
 
 @Serializable
-data class IsContactlessRespBody (
+data class IsContactlessRespBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String = "IS_CONTACTLESS",
     val result: Boolean?,
@@ -71,7 +86,7 @@ data class TransmitCardRequestRespBody(
 )
 
 @Serializable
-data class IsCardPresentRespBody (
+data class IsCardPresentRespBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String = "IS_CARD_PRESENT",
     val result: Boolean?,
@@ -79,19 +94,19 @@ data class IsCardPresentRespBody (
 )
 
 @Serializable
-data class EndRemoteServiceBody<T> (
+data class EndRemoteServiceBody<T>(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val outputData: T?,
 )
 
 @Serializable
-data class TransmitCardSelectionRequestsCmdBody (
+data class TransmitCardSelectionRequestsCmdBody(
     val coreApiLevel: Int,
     val parameters: TransmitCardSelectionRequestsParameters,
 )
 
 @Serializable
-data class TransmitCardSelectionRequestsParameters (
+data class TransmitCardSelectionRequestsParameters(
     val multiSelectionProcessing: MultiSelectionProcessing,
     val channelControl: ChannelControl,
     val cardSelectors: Array<CardSelector>,
@@ -99,7 +114,7 @@ data class TransmitCardSelectionRequestsParameters (
 )
 
 @Serializable
-data class TransmitCardRequestCmdBody (
+data class TransmitCardRequestCmdBody(
     val coreApiLevel: Int,
     val parameters: TransmitCardRequestParameters,
 )
@@ -111,19 +126,19 @@ data class TransmitCardRequestParameters(
 )
 
 @Serializable
-enum class MultiSelectionProcessing{
-    FIRST_MATCH,
-    PROCESS_ALL
+enum class MultiSelectionProcessing {
+  FIRST_MATCH,
+  PROCESS_ALL
 }
 
 @Serializable
 enum class ChannelControl {
-    KEEP_OPEN,
-    CLOSE_AFTER,
+  KEEP_OPEN,
+  CLOSE_AFTER,
 }
 
 @Serializable
-data class CardSelector (
+data class CardSelector(
     val logicalProtocolName: String? = null,
     val powerOnDataRegex: String? = null,
     val aid: String? = null,
@@ -133,41 +148,41 @@ data class CardSelector (
 
 @Serializable
 enum class FileOccurrence {
-    FIRST,
-    LAST,
-    NEXT,
-    PREVIOUS
+  FIRST,
+  LAST,
+  NEXT,
+  PREVIOUS
 }
 
 @Serializable
 enum class FileControlInformation {
-    FCI,
-    FCP,
-    FMD,
-    NO_RESPONSE
+  FCI,
+  FCP,
+  FMD,
+  NO_RESPONSE
 }
 
 @Serializable
-data class CardSelectionRequest (
+data class CardSelectionRequest(
     val cardRequest: CardRequest? = null,
     val successfulSelectionStatusWords: Array<String>,
 )
 
 @Serializable
-data class CardRequest (
+data class CardRequest(
     val apduRequests: Array<ApduRequest>,
     val stopOnUnsuccessfulStatusWord: Boolean,
 )
 
 @Serializable
-data class ApduRequest (
+data class ApduRequest(
     val apdu: String,
     val successfulStatusWords: Array<String>,
     val info: String? = null,
 )
 
 @Serializable
-data class TransmitCardSelectionRequestsRespBody (
+data class TransmitCardSelectionRequestsRespBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String = "TRANSMIT_CARD_SELECTION_REQUESTS",
     var result: List<CardSelectionResponse>,
@@ -175,7 +190,7 @@ data class TransmitCardSelectionRequestsRespBody (
 )
 
 @Serializable
-data class CardSelectionResponse (
+data class CardSelectionResponse(
     val hasMatched: Boolean,
     val powerOnData: String? = null,
     val selectApplicationResponse: ApduResponse? = null,
@@ -183,15 +198,15 @@ data class CardSelectionResponse (
 )
 
 @Serializable
-data class ApduResponse (
+data class ApduResponse(
     val apdu: String,
     val statusWord: String,
 )
 
 @Serializable
-data class CardResponse (
+data class CardResponse(
     val isLogicalChannelOpen: Boolean,
     val apduResponses: List<ApduResponse>,
 )
 
-class ReaderNotFoundException(message: String): Exception(message)
+class ReaderNotFoundException(message: String) : Exception(message)
