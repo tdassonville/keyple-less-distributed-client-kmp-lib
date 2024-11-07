@@ -22,12 +22,13 @@ import kotlinx.serialization.json.jsonObject
 import org.eclipse.keyple.distributed.network.KeypleServer
 import org.eclipse.keyple.distributed.network.KeypleServerConfig
 import org.eclipse.keyple.distributed.network.buildHttpClient
-import org.eclipse.keyple.distributed.randomUUID
 import org.eclipse.keyple.keyplelessreaderlib.CardIOException
 import org.eclipse.keyple.keyplelessreaderlib.LocalNfcReader
 import org.eclipse.keyple.keyplelessreaderlib.MultiplatformReader
 import org.eclipse.keyple.keyplelessreaderlib.ReaderIOException
 import org.eclipse.keyple.keyplelessreaderlib.UnexpectedStatusWordException
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 private const val TAG = "KeypleRemoteService"
 
@@ -66,13 +67,14 @@ class KeypleRemoteService(
     reader.release()
   }
 
+  @OptIn(ExperimentalUuidApi::class)
   suspend fun <T, R> executeRemoteService(
       serviceId: String,
       inputData: T? = null,
       inputSerializer: KSerializer<T>,
       outputSerializer: KSerializer<R>
   ): KeypleResult<R?> {
-    val sessionId = randomUUID()
+    val sessionId = Uuid.random().toString()
 
     val bodyContent =
         ExecuteRemoteServiceBody(
