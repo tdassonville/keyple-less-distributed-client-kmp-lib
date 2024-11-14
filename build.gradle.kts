@@ -16,7 +16,7 @@ kotlin {
         iosSimulatorArm64(),
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
-            baseName = "keyplelessdistributedclientlib"
+            baseName = "keyplelessdistributedlib"
             isStatic = false
         }
     }
@@ -66,7 +66,7 @@ kotlin {
 }
 
 android {
-    namespace = "org.eclipse.keyple.keyplelessdistributedclientlib"
+    namespace = "org.eclipse.keyple.keyplelessdistributedlib"
     compileSdk = 34
 
     defaultConfig {

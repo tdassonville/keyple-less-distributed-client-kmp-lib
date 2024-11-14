@@ -11,7 +11,7 @@
  ************************************************************************************** */
 @file:OptIn(ExperimentalStdlibApi::class)
 
-package org.eclipse.keyple.distributed.protocol
+package org.eclipse.keyple.keyplelessdistributedlib.protocol
 
 import io.github.aakira.napier.Napier
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -19,9 +19,9 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import org.eclipse.keyple.distributed.network.KeypleServer
-import org.eclipse.keyple.distributed.network.KeypleServerConfig
-import org.eclipse.keyple.distributed.network.buildHttpClient
+import org.eclipse.keyple.keyplelessdistributedlib.network.KeypleServer
+import org.eclipse.keyple.keyplelessdistributedlib.network.KeypleServerConfig
+import org.eclipse.keyple.keyplelessdistributedlib.network.buildHttpClient
 import org.eclipse.keyple.keyplelessreaderlib.CardIOException
 import org.eclipse.keyple.keyplelessreaderlib.LocalNfcReader
 import org.eclipse.keyple.keyplelessreaderlib.MultiplatformReader

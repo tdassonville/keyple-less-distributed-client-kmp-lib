@@ -9,7 +9,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.distributed.network
+package org.eclipse.keyple.keyplelessdistributedlib.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -19,7 +19,7 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-import org.eclipse.keyple.distributed.protocol.LogLevel
+import org.eclipse.keyple.keyplelessdistributedlib.protocol.LogLevel
 
 fun buildHttpClient(debugLog: LogLevel): HttpClient {
   return HttpClient {

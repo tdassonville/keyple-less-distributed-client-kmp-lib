@@ -9,9 +9,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.distributed.network
+package org.eclipse.keyple.keyplelessdistributedlib.network
 
-import org.eclipse.keyple.distributed.protocol.LogLevel
+import org.eclipse.keyple.keyplelessdistributedlib.protocol.LogLevel
 
 data class KeypleServerConfig(
     val host: String,

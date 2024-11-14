@@ -9,7 +9,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.distributed.network
+package org.eclipse.keyple.keyplelessdistributedlib.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body

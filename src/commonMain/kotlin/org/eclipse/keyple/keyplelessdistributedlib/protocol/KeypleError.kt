@@ -9,11 +9,12 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.distributed.protocol
+package org.eclipse.keyple.keyplelessdistributedlib.protocol
 
-enum class LogLevel {
-  NONE,
-  INFO,
-  ERROR,
-  DEBUG
+sealed class KeypleResult<T> {
+  data class Success<T>(val data: T) : KeypleResult<T>()
+
+  data class Failure<T>(val error: KeypleError) : KeypleResult<T>()
 }
+
+data class KeypleError(val statusCode: Int, val message: String)

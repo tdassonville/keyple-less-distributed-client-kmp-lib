@@ -9,7 +9,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.distributed.protocol
+package org.eclipse.keyple.keyplelessdistributedlib.protocol
 
 import kotlin.experimental.or
 import kotlinx.serialization.encodeToString
