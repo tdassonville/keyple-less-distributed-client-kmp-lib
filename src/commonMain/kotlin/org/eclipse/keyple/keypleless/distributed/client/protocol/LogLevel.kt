@@ -9,19 +9,11 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.keyplelessdistributedlib.network
+package org.eclipse.keyple.keypleless.distributed.client.protocol
 
-import org.eclipse.keyple.keyplelessdistributedlib.protocol.LogLevel
-
-data class KeypleServerConfig(
-    val host: String,
-    val port: Int,
-    val endpoint: String,
-    val logLevel: LogLevel = LogLevel.NONE,
-    // TODO: authent
-    val basicAuth: String? = null,
-) {
-  fun baseUrl() = "${host}:${port}"
-
-  fun serviceUrl() = "${baseUrl()}${endpoint}"
+enum class LogLevel {
+  NONE,
+  INFO,
+  ERROR,
+  DEBUG
 }

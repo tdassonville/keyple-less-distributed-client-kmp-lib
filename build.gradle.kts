@@ -10,14 +10,16 @@ plugins {
 kotlin {
     jvmToolchain(17)
 
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "keyplelessdistributedlib"
-            isStatic = false
+    if (System.getProperty("os.name").lowercase().contains("mac")) {
+        listOf(
+            iosX64(),
+            iosArm64(),
+            iosSimulatorArm64(),
+        ).forEach { iosTarget ->
+            iosTarget.binaries.framework {
+                baseName = "keyplelessdistributedlib"
+                isStatic = false
+            }
         }
     }
 
@@ -66,7 +68,7 @@ kotlin {
 }
 
 android {
-    namespace = "org.eclipse.keyple.keyplelessdistributedlib"
+    namespace = "org.eclipse.keyple.keypleless.distributed.client"
     compileSdk = 34
 
     defaultConfig {
@@ -75,7 +77,7 @@ android {
     }
 }
 
-group = "org.eclipse.keyple"
+group = "org.eclipse.keyple.keypleless.distributed.client"
 version = "0.1.2"
 
 publishing {

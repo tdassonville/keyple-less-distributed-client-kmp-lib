@@ -9,7 +9,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.keyplelessdistributedlib.protocol
+package org.eclipse.keyple.keypleless.distributed.client.protocol
 
 sealed class KeypleResult<T> {
   data class Success<T>(val data: T) : KeypleResult<T>()

@@ -9,7 +9,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.keyplelessdistributedlib.protocol
+package org.eclipse.keyple.keypleless.distributed.client.protocol
 
 import kotlin.experimental.or
 import kotlinx.serialization.encodeToString
@@ -20,16 +20,13 @@ private const val SW_6C00: Int = 0x6C00
 private const val SW1_MASK: Int = 0xFF00
 private const val SW2_MASK: Int = 0x00FF
 
-// TODO need to find a better name for this class
 class MessageProcessor(private val json: Json) {
 
-  // TODO name does not reflect the actual function
   fun isContactless(): String {
     val resp = IsContactlessRespBody(result = true)
     return json.encodeToString(resp)
   }
 
-  // TODO name does not reflect the actual function
   fun isCardPresent(): String {
     // TODO: mayby we need to be smarter here?...
     val resp = IsCardPresentRespBody(result = true)
