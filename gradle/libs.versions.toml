@@ -3,13 +3,13 @@ agp = "8.6.1"
 android-compileSdk = "34"
 android-minSdk = "24"
 coroutines = "1.9.0"
-datetime = "0.6.0"
+datetime = "0.6.1"
 kotlin = "2.0.21"
 kotlinxSerialization = "1.7.3"
 napier = "2.7.1"
 ktor = "2.3.12"
 dokka = "1.9.10"
-keypleLess = "+"
+keyple-less = "+"
 jdk="17"
 
 [libraries]
@@ -27,7 +27,7 @@ ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
-keypleless-reader-nfcmobile-kmp-lib = { module = "org.eclipse.keyple:keypleless-reader-nfcmobile-kmp-lib", version.ref = "keypleLess" }
+keypleless-reader-nfcmobile-kmp-lib = { module = "org.eclipse.keyple:keypleless-reader-nfcmobile-kmp-lib", version.ref = "keyple-less" }
 
 [plugins]
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
