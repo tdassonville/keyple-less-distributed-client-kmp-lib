@@ -24,11 +24,7 @@ import kotlinx.serialization.json.jsonObject
 import org.eclipse.keyple.keypleless.distributed.client.network.KeypleServer
 import org.eclipse.keyple.keypleless.distributed.client.network.KeypleServerConfig
 import org.eclipse.keyple.keypleless.distributed.client.network.buildHttpClient
-import org.eclipse.keyple.keyplelessreaderlib.CardIOException
-import org.eclipse.keyple.keyplelessreaderlib.LocalNfcReader
-import org.eclipse.keyple.keyplelessreaderlib.MultiplatformReader
-import org.eclipse.keyple.keyplelessreaderlib.ReaderIOException
-import org.eclipse.keyple.keyplelessreaderlib.UnexpectedStatusWordException
+import org.eclipse.keyple.keypleless.reader.nfcmobile.*
 
 private const val TAG = "KeypleRemoteService"
 

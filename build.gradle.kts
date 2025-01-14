@@ -2,13 +2,13 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinSerialization)
-    id("org.eclipse.keyple")
+    alias(libs.plugins.dokka)
     id("com.diffplug.spotless")
     id("maven-publish")
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(libs.versions.jdk.get().toInt())
 
     if (System.getProperty("os.name").lowercase().contains("mac")) {
         listOf(
@@ -29,14 +29,14 @@ kotlin {
 
     jvm {
         kotlin {
-            jvmToolchain(17)
+            jvmToolchain(libs.versions.jdk.get().toInt())
         }
     }
 
     sourceSets {
         commonMain.dependencies {
 
-            api(libs.keypleLessReaderNfcmobile)
+            api(libs.keypleless.reader.nfcmobile.kmp.lib)
 
             implementation(libs.kotlinx.coroutines)
             implementation(libs.kotlinx.datetime)
@@ -47,8 +47,6 @@ kotlin {
             implementation(libs.ktor.client.auth)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-
-            implementation(libs.okio)
 
             api(libs.napier)
         }
@@ -69,16 +67,12 @@ kotlin {
 
 android {
     namespace = "org.eclipse.keyple.keypleless.distributed.client"
-    compileSdk = 34
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = 23
-        targetSdk = 34
+        minSdk = libs.versions.android.minSdk.get().toInt()
     }
 }
-
-group = "org.eclipse.keyple.keypleless.distributed.client"
-version = "0.1.2"
 
 publishing {
     repositories {
@@ -92,6 +86,19 @@ publishing {
 //  TASKS CONFIGURATION
 ///////////////////////////////////////////////////////////////////////////////
 tasks {
+    dokkaHtml {
+        outputDirectory.set(layout.buildDirectory.dir("dokka"))
+
+        dokkaSourceSets {
+            configureEach {
+                includeNonPublic.set(false)
+                skipDeprecated.set(true)
+                reportUndocumented.set(true)
+                jdkVersion.set(libs.versions.jdk.get().toInt())
+            }
+        }
+    }
+
     spotless {
         kotlin {
             target("**/*.kt")
