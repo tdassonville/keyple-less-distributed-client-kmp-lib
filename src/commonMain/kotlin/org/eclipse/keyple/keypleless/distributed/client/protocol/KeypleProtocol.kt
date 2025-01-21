@@ -43,7 +43,7 @@ data class MessageDTO(
 )
 
 @Serializable
-data class ExecuteRemoteServiceBody<T>(
+internal data class ExecuteRemoteServiceBody<T>(
     val coreApiLevel: Int,
     val serviceId: String,
     val isReaderContactless: Boolean = true,
@@ -64,13 +64,13 @@ enum class ErrorCode {
 }
 
 @Serializable
-data class CmdBody(
+internal data class CmdBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String,
 )
 
 @Serializable
-data class IsContactlessRespBody(
+internal data class IsContactlessRespBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String = "IS_CONTACTLESS",
     val result: Boolean?,
@@ -78,7 +78,7 @@ data class IsContactlessRespBody(
 )
 
 @Serializable
-data class TransmitCardRequestRespBody(
+internal data class TransmitCardRequestRespBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String = "TRANSMIT_CARD_REQUEST",
     val result: CardResponse? = null,
@@ -86,7 +86,7 @@ data class TransmitCardRequestRespBody(
 )
 
 @Serializable
-data class IsCardPresentRespBody(
+internal data class IsCardPresentRespBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String = "IS_CARD_PRESENT",
     val result: Boolean?,
@@ -94,19 +94,19 @@ data class IsCardPresentRespBody(
 )
 
 @Serializable
-data class EndRemoteServiceBody<T>(
+internal data class EndRemoteServiceBody<T>(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val outputData: T?,
 )
 
 @Serializable
-data class TransmitCardSelectionRequestsCmdBody(
+internal data class TransmitCardSelectionRequestsCmdBody(
     val coreApiLevel: Int,
     val parameters: TransmitCardSelectionRequestsParameters,
 )
 
 @Serializable
-data class TransmitCardSelectionRequestsParameters(
+internal data class TransmitCardSelectionRequestsParameters(
     val multiSelectionProcessing: MultiSelectionProcessing,
     val channelControl: ChannelControl,
     val cardSelectors: Array<CardSelector>,
@@ -114,31 +114,31 @@ data class TransmitCardSelectionRequestsParameters(
 )
 
 @Serializable
-data class TransmitCardRequestCmdBody(
+internal data class TransmitCardRequestCmdBody(
     val coreApiLevel: Int,
     val parameters: TransmitCardRequestParameters,
 )
 
 @Serializable
-data class TransmitCardRequestParameters(
+internal data class TransmitCardRequestParameters(
     val cardRequest: CardRequest,
     val channelControl: ChannelControl,
 )
 
 @Serializable
-enum class MultiSelectionProcessing {
+internal enum class MultiSelectionProcessing {
   FIRST_MATCH,
   PROCESS_ALL
 }
 
 @Serializable
-enum class ChannelControl {
+internal enum class ChannelControl {
   KEEP_OPEN,
   CLOSE_AFTER,
 }
 
 @Serializable
-data class CardSelector(
+internal data class CardSelector(
     val logicalProtocolName: String? = null,
     val powerOnDataRegex: String? = null,
     val aid: String? = null,
@@ -147,7 +147,7 @@ data class CardSelector(
 )
 
 @Serializable
-enum class FileOccurrence {
+internal enum class FileOccurrence {
   FIRST,
   LAST,
   NEXT,
@@ -155,7 +155,7 @@ enum class FileOccurrence {
 }
 
 @Serializable
-enum class FileControlInformation {
+internal enum class FileControlInformation {
   FCI,
   FCP,
   FMD,
@@ -163,26 +163,26 @@ enum class FileControlInformation {
 }
 
 @Serializable
-data class CardSelectionRequest(
+internal data class CardSelectionRequest(
     val cardRequest: CardRequest? = null,
     val successfulSelectionStatusWords: Array<String>,
 )
 
 @Serializable
-data class CardRequest(
+internal data class CardRequest(
     val apduRequests: Array<ApduRequest>,
     val stopOnUnsuccessfulStatusWord: Boolean,
 )
 
 @Serializable
-data class ApduRequest(
+internal data class ApduRequest(
     val apdu: String,
     val successfulStatusWords: Array<String>,
     val info: String? = null,
 )
 
 @Serializable
-data class TransmitCardSelectionRequestsRespBody(
+internal data class TransmitCardSelectionRequestsRespBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String = "TRANSMIT_CARD_SELECTION_REQUESTS",
     var result: List<CardSelectionResponse>,
@@ -190,7 +190,7 @@ data class TransmitCardSelectionRequestsRespBody(
 )
 
 @Serializable
-data class CardSelectionResponse(
+internal data class CardSelectionResponse(
     val hasMatched: Boolean,
     val powerOnData: String? = null,
     val selectApplicationResponse: ApduResponse? = null,
@@ -198,13 +198,13 @@ data class CardSelectionResponse(
 )
 
 @Serializable
-data class ApduResponse(
+internal data class ApduResponse(
     val apdu: String,
     val statusWord: String,
 )
 
 @Serializable
-data class CardResponse(
+internal data class CardResponse(
     val isLogicalChannelOpen: Boolean,
     val apduResponses: List<ApduResponse>,
 )

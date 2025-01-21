@@ -20,7 +20,7 @@ private const val SW_6C00: Int = 0x6C00
 private const val SW1_MASK: Int = 0xFF00
 private const val SW2_MASK: Int = 0x00FF
 
-class MessageProcessor(private val json: Json) {
+internal class MessageProcessor(private val json: Json) {
 
   fun isContactless(): String {
     val resp = IsContactlessRespBody(result = true)
@@ -28,7 +28,7 @@ class MessageProcessor(private val json: Json) {
   }
 
   fun isCardPresent(): String {
-    // TODO: mayby we need to be smarter here?...
+    // TODO: maybe we need to be smarter here?...
     val resp = IsCardPresentRespBody(result = true)
     return json.encodeToString(resp)
   }
@@ -85,11 +85,9 @@ class MessageProcessor(private val json: Json) {
   }
 
   @OptIn(ExperimentalStdlibApi::class)
-  // TODO naming is not clear (apdu vs apduRequest and getResponseApdu, ....)
   fun createRequest(apdu: ByteArray, apduRequest: ApduRequest): ApduRequest? {
     val statusWord = getStatusWordAsInt(apdu)
 
-    // TODO maybe we can extract the IF to a named function? (same for else if)
     if (((statusWord and SW1_MASK) == SW_6100)) {
       val getResponseApdu =
           byteArrayOf(
