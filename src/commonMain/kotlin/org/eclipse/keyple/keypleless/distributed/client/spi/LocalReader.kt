@@ -33,7 +33,7 @@ interface LocalReader {
   suspend fun waitForCardPresent(): Boolean
 
   /** @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.) */
-  suspend fun startCardDetection(onCardFound: () -> Unit)
+  fun startCardDetection(onCardFound: () -> Unit)
 
   /**
    * @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.)

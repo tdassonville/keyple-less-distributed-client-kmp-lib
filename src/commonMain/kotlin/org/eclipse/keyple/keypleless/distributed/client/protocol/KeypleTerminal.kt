@@ -48,7 +48,7 @@ class KeypleTerminal(
     return reader.waitForCardPresent()
   }
 
-  suspend fun waitForCard(onCard: () -> Unit) {
+  fun waitForCard(onCard: () -> Unit) {
     reader.startCardDetection { onCard() }
   }
 
