@@ -28,7 +28,7 @@ internal class MessageProcessor(private val json: Json) {
   }
 
   fun isCardPresent(): String {
-    // TODO: maybe we need to be smarter here?...
+    // TODO: maybe we need to be smarter here for desktop pcsc readers?...
     val resp = IsCardPresentRespBody(result = true)
     return json.encodeToString(resp)
   }

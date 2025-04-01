@@ -19,6 +19,8 @@ import kotlin.uuid.Uuid
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import org.eclipse.keyple.keypleless.distributed.client.spi.CardIOException
 import org.eclipse.keyple.keypleless.distributed.client.spi.LocalReader
@@ -30,8 +32,11 @@ private const val TAG = "KeypleTerminal"
 class KeypleTerminal(
     private val reader: LocalReader,
     private val clientId: String,
-    private val networkClient: SyncNetworkClient
+    private val networkClient: SyncNetworkClient,
+    cardSelectionScenarioJsonString: String = ""
 ) {
+  private var selectionScenario: CardSelectionScenario? = null
+
   private val json = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
@@ -39,6 +44,10 @@ class KeypleTerminal(
   }
 
   private val messageProcessor = MessageProcessor(json)
+
+  init {
+    parseCardSelectionScenario(cardSelectionScenarioJsonString)
+  }
 
   fun setScanMessage(msg: String) {
     reader.setScanMessage(msg)
@@ -56,6 +65,21 @@ class KeypleTerminal(
     reader.release()
   }
 
+  fun setCardSelectionScenarioJsonString(cardSelectionScenarioJsonString: String) {
+    parseCardSelectionScenario(cardSelectionScenarioJsonString)
+  }
+
+  private fun parseCardSelectionScenario(cardSelectionScenarioJsonString: String) {
+    if (cardSelectionScenarioJsonString.isNotEmpty()) {
+      this.selectionScenario = null
+      try {
+        this.selectionScenario = json.decodeFromString(cardSelectionScenarioJsonString)
+      } catch (e: Exception) {
+        Napier.e(message = "Invalid CardScenario: ${e.message}", tag = TAG, throwable = e)
+      }
+    }
+  }
+
   @OptIn(ExperimentalUuidApi::class)
   suspend fun <T, R> executeRemoteService(
       serviceId: String,
@@ -65,10 +89,16 @@ class KeypleTerminal(
   ): KeypleResult<R?> {
     val sessionId = Uuid.random().toString()
 
+    var cardSelectResponses = emptyList<CardSelectionResponse>()
+    selectionScenario?.let { cardSelectResponses = processCardSelectionScenario(it) }
+
     val bodyContent =
         ExecuteRemoteServiceBody(
             serviceId = serviceId,
-            inputData = inputData?.let { json.encodeToJsonElement(inputSerializer, inputData) },
+            inputData = makeInputData(inputData, inputSerializer),
+            initialCardContent = makeInitialCardContent(cardSelectResponses),
+            initialCardContentClassName =
+                if (cardSelectResponses.isEmpty()) null else "java.util.Properties",
             coreApiLevel = CORE_API_LEVEL)
     val request =
         MessageDTO(
@@ -123,6 +153,24 @@ class KeypleTerminal(
     } finally {
       reader.closePhysicalChannel()
     }
+  }
+
+  private fun makeInitialCardContent(
+      cardSelectResponses: List<CardSelectionResponse>
+  ): JsonElement? {
+    return if (cardSelectResponses.isEmpty()) {
+      null
+    } else {
+      json.encodeToJsonElement(
+          ProcessedCardSelectionScenario(json.encodeToString(cardSelectResponses)))
+    }
+  }
+
+  private fun <T> makeInputData(inputData: T?, inputSerializer: KSerializer<T>): JsonElement? {
+    if (inputData == null) {
+      return null
+    }
+    return json.encodeToJsonElement(inputSerializer, inputData)
   }
 
   private suspend fun transmitCardRequest(message: MessageDTO): String {
@@ -188,6 +236,38 @@ class KeypleTerminal(
     return json.encodeToString(transmitCardSelectionRequestsRespBody)
   }
 
+  private suspend fun processCardSelectionScenario(
+      scenario: CardSelectionScenario
+  ): List<CardSelectionResponse> {
+    val cardSelectionResponses = mutableListOf<CardSelectionResponse>()
+    var error: Error? = null
+    val nbIterations = scenario.cardSelectors.size
+
+    for (i in 0 ..< nbIterations) {
+      try {
+        val cardSelectionResponse =
+            processCardSelectionRequest(
+                scenario.cardSelectors[i],
+                scenario.defaultCardSelections[i].cardSelectionRequest,
+                scenario.channelControl)
+        cardSelectionResponses.add(cardSelectionResponse)
+        if (cardSelectionResponse.hasMatched) {
+          break
+        }
+      } catch (ex: CardIOException) {
+        error = Error(code = ErrorCode.CARD_COMMUNICATION_ERROR, message = ex.message)
+        break
+      } catch (ex: ReaderNotFoundException) {
+        error = Error(code = ErrorCode.READER_COMMUNICATION_ERROR, message = ex.message)
+        break
+      } catch (ex: UnexpectedStatusWordException) {
+        error = Error(code = ErrorCode.CARD_COMMAND_ERROR, message = ex.message)
+        break
+      }
+    }
+    return if (error == null) cardSelectionResponses else emptyList()
+  }
+
   private suspend fun processCardSelectionRequest(
       cardSelector: CardSelector,
       cardSelectionRequest: CardSelectionRequest,
@@ -246,6 +326,7 @@ class KeypleTerminal(
     return CardResponse(isLogicalChannelOpen = isLogicalChannelOpen, apduResponses = apduResponses)
   }
 
+  @OptIn(ExperimentalStdlibApi::class)
   private suspend fun processApduRequest(apduRequest: ApduRequest): ApduResponse {
     val apdu = reader.transmitApdu(apduRequest.apdu.hexToByteArray())
 

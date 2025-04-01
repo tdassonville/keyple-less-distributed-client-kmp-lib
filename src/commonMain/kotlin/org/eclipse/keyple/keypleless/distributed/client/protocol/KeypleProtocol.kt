@@ -12,6 +12,7 @@
 package org.eclipse.keyple.keypleless.distributed.client.protocol
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 const val API_LEVEL = 3
 const val CORE_API_LEVEL = 2
@@ -47,7 +48,9 @@ internal data class ExecuteRemoteServiceBody<T>(
     val coreApiLevel: Int,
     val serviceId: String,
     val isReaderContactless: Boolean = true,
-    val inputData: T?
+    val inputData: T?,
+    val initialCardContent: JsonElement? = null,
+    val initialCardContentClassName: String? = null
 )
 
 @Serializable
