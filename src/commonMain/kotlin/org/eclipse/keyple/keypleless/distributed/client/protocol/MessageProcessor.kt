@@ -22,11 +22,6 @@ private const val SW2_MASK: Int = 0x00FF
 
 internal class MessageProcessor(private val json: Json) {
 
-  fun isContactless(): String {
-    val resp = IsContactlessRespBody(result = true)
-    return json.encodeToString(resp)
-  }
-
   fun isCardPresent(): String {
     // TODO: maybe we need to be smarter here for desktop pcsc readers?...
     val resp = IsCardPresentRespBody(result = true)

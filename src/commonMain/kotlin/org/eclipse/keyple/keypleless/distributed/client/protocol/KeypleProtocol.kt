@@ -23,8 +23,6 @@ const val END_REMOTE_SERVICE = "END_REMOTE_SERVICE"
 
 const val RESP = "RESP"
 
-const val IS_CONTACTLESS = "IS_CONTACTLESS"
-
 const val IS_CARD_PRESENT = "IS_CARD_PRESENT"
 
 const val TRANSMIT_CARD_SELECTION_REQUESTS = "TRANSMIT_CARD_SELECTION_REQUESTS"
@@ -70,14 +68,6 @@ enum class ErrorCode {
 internal data class CmdBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String,
-)
-
-@Serializable
-internal data class IsContactlessRespBody(
-    val coreApiLevel: Int = CORE_API_LEVEL,
-    val service: String = "IS_CONTACTLESS",
-    val result: Boolean?,
-    val error: Error? = null
 )
 
 @Serializable

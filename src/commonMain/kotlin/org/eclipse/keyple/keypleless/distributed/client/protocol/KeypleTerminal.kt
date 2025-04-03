@@ -121,13 +121,11 @@ class KeypleTerminal(
 
         val deviceAnswer =
             when (service) {
-              IS_CONTACTLESS -> messageProcessor.isContactless()
               IS_CARD_PRESENT -> messageProcessor.isCardPresent()
               TRANSMIT_CARD_SELECTION_REQUESTS -> transmitCardSelectionRequests(serverResponse)
               TRANSMIT_CARD_REQUEST -> transmitCardRequest(serverResponse)
               else -> {
-                // TODO check what should we do here? throw an Exception?
-                ""
+                  return KeypleResult.Failure(KeypleError(statusCode = -1, message = "Unknown request: $service"))
               }
             }
 
