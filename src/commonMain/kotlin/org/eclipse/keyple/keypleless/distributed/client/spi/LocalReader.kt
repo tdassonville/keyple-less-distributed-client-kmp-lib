@@ -21,6 +21,7 @@ class CardIOException(message: String) : Exception(message)
  * your own version or support different hardware by implementing this interface.
  */
 interface LocalReader {
+  /** @returns the name of this reader (mostly indicative) */
   fun name(): String
 
   /**
@@ -29,27 +30,66 @@ interface LocalReader {
    */
   fun setScanMessage(msg: String)
 
-  /** @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.) */
+  /**
+   * Waits (suspends) for a card to be detected
+   *
+   * @returns True if a card is detected, otherwise false
+   * @throws CancellationException
+   */
   suspend fun waitForCardPresent(): Boolean
 
-  /** @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.) */
+  /**
+   * Waits (asynchronously) for a card to be inserted in the reader, then triggers the provided
+   * callback.
+   *
+   * @param onCard The callback that will be called when a card is detected.
+   * @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.)
+   */
   fun startCardDetection(onCardFound: () -> Unit)
 
   /**
+   * Attempts to open the physical channel (to establish communication with the card).
+   *
    * @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.)
    * @throws CardIOException on IO error with the card (card exited the NFC field, etc.)
    */
   suspend fun openPhysicalChannel()
 
+  /**
+   * Attempts to close the current physical channel. The physical channel may have been implicitly
+   * closed previously by a card withdrawal.
+   *
+   * @throws ReaderNotFoundException If the communication with the reader has failed.
+   */
   fun closePhysicalChannel()
 
+  /**
+   * Gets the power-on data. The power-on data is defined as the data retrieved by the reader when
+   * the card is inserted.
+   *
+   * In the case of a contactless reader, the reader decides what this data is. Contactless readers
+   * provide a virtual ATR (partially standardized by the PC/SC standard), but other devices can
+   * have their own definition, including for example elements from the anti-collision stage of the
+   * ISO14443 protocol (ATQA, ATQB, ATS, SAK, etc).
+   *
+   * These data being variable from one reader to another, they are defined here in string format
+   * which can be either a hexadecimal string or any other relevant information.
+   *
+   * @return a non empty String
+   */
   fun getPowerOnData(): String
 
   /**
-   * @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.)
-   * @throws CardIOException on IO error with the card (card exited the NFC field, etc.)
+   * Transmits an Application Protocol Data Unit (APDU) command to the smart card and receives the
+   * response.
+   *
+   * @param commandApdu: The command APDU to be transmitted.
+   * @return The response APDU received from the smart card.
+   * @throws ReaderNotFoundException If the communication with the reader has failed.
+   * @throws CardIOException If the communication with the card has failed
    */
   suspend fun transmitApdu(commandApdu: ByteArray): ByteArray
 
+  /** Stop scanning for NFC cards. Release the reader resources. */
   fun release()
 }

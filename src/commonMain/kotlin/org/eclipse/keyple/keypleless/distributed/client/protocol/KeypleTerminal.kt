@@ -29,6 +29,25 @@ import org.eclipse.keyple.keypleless.distributed.client.spi.SyncNetworkClient
 
 private const val TAG = "KeypleTerminal"
 
+/**
+ * KeypleTerminal is the entry point to the Keyple Distributed Client Library. Provided an instance
+ * of a NFC reader, and a NetworkClient, this object will handle the Card Selection Scenario if any,
+ * connect the NFC Card to the Keyple server and execute the commands sent by the server.
+ *
+ * Use @see waitCard() or @see waitForCardPresent() to trigger the NFC card detection.
+ *
+ * Then use executeRemoteService() to start the Keyple transaction.
+ *
+ * @property reader The NFC reader to use. Usually an instance of
+ *   [NFC Reader](https://github.com/eclipse-keyple/keypleless-reader-nfcmobile-kmp-lib)
+ * @property clientId A client ID for your Keyple server to identify this remote reader instance.
+ * @property networkClient The network client to use. See
+ *   [SimpleHttpNetworkClient](https://github.com/calypsonet/keyple-demo-ticketing-reloading-remote/blob/main/client/kmp/composeApp/src/commonMain/kotlin/org/calypsonet/keyple/demo/reload/remote/network/SimpleHttpNetworkClient.kt)
+ *   for an example implementation
+ * @property cardSelectionScenarioJsonString An optionnal Card Selection Strategy Json string. See
+ *   [Selection JSON Specification here](https://keyple.org/user-guides/non-keyple-client/selection-json-specification/)
+ *   to learn more
+ */
 class KeypleTerminal(
     private val reader: LocalReader,
     private val clientId: String,
@@ -49,22 +68,41 @@ class KeypleTerminal(
     parseCardSelectionScenario(cardSelectionScenarioJsonString)
   }
 
+  /**
+   * Set the scan instructions to the user, for applicable NFC readers. (Displayed on the iOS system
+   * "NFC reader" popup)
+   *
+   * @param msg The message to display, already localized.
+   */
   fun setScanMessage(msg: String) {
     reader.setScanMessage(msg)
   }
 
+  /** Wait (synchronously) for a card to be presented. */
   suspend fun waitForCard(): Boolean {
     return reader.waitForCardPresent()
   }
 
+  /**
+   * Wait (asynchronously) for a card to be presented.
+   *
+   * @param onCard The callback that will be called when a card is detected.
+   */
   fun waitForCard(onCard: () -> Unit) {
     reader.startCardDetection { onCard() }
   }
 
+  /** Stop scanning for NFC cards. Release the reader resources. */
   fun release() {
     reader.release()
   }
 
+  /**
+   * Injects the card selection scenario that has been retrieved by your own means (from your server
+   * for example).
+   *
+   * @param cardSelectionScenarioJsonString The card selection scenario as a JSON string.
+   */
   fun setCardSelectionScenarioJsonString(cardSelectionScenarioJsonString: String) {
     parseCardSelectionScenario(cardSelectionScenarioJsonString)
   }
@@ -80,6 +118,20 @@ class KeypleTerminal(
     }
   }
 
+  /**
+   * Execute a remote service on the Keyple server. This suspend method will communicate back and
+   * forth, over the network with the keyple server, and over NFC with the card. The server drives
+   * the transaction, requesting the card to execute APDU commands. APDU responses are sent back to
+   * the server, that can process them and decide to send new APDU commands to execute, as many time
+   * as needed.
+   *
+   * @param serviceId A mandatory service identifier (as defined on your Keyple server)
+   * @param inputData optionnal extra data your keyple server may need to execute this service. This
+   *   is up to your business logic. For example it could contain a payment ID, a transaction ID, a
+   *   customer reference, etc...
+   * @param inputSerializer if an inputData is provided, you must provide the serializer for it.
+   * @param outputSerializer a deserializer used to return you the parsed output data.
+   */
   @OptIn(ExperimentalUuidApi::class)
   suspend fun <T, R> executeRemoteService(
       serviceId: String,
@@ -125,7 +177,8 @@ class KeypleTerminal(
               TRANSMIT_CARD_SELECTION_REQUESTS -> transmitCardSelectionRequests(serverResponse)
               TRANSMIT_CARD_REQUEST -> transmitCardRequest(serverResponse)
               else -> {
-                  return KeypleResult.Failure(KeypleError(statusCode = -1, message = "Unknown request: $service"))
+                return KeypleResult.Failure(
+                    KeypleError(statusCode = -1, message = "Unknown request: $service"))
               }
             }
 
