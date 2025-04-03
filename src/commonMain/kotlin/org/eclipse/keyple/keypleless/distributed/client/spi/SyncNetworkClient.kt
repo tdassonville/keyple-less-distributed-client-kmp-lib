@@ -17,10 +17,10 @@ import org.eclipse.keyple.keypleless.distributed.client.protocol.MessageDTO
 class ServerIOException(override val message: String) : Exception(message)
 
 /**
- * The network transmission abstraction used to communicate with a Keyple server. You can use the
- * provided @see SimpleHttpNetworkClient for publicly accessible http keyple servers (it just
- * supports basic auth). If you have more constraints, for authentication for example, use this
- * interface and implement your own authentication logics.
+ * The network transmission abstraction used to communicate with a Keyple server. See
+ * [SimpleHttpNetworkClient](https://github.com/calypsonet/keyple-demo-ticketing-reloading-remote/blob/main/client/kmp/composeApp/src/commonMain/kotlin/org/calypsonet/keyple/demo/reload/remote/network/SimpleHttpNetworkClient.kt)
+ * for an example implementation using Ktor with HTTP basic-auth. If you have more constrains, for
+ * authentication for example, use this interface and implement your own authentication logics.
  */
 interface SyncNetworkClient {
 
