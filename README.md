@@ -16,6 +16,12 @@ Full documentation available at [keyple.org](https://keyple.org)
 
 ## Build
 The code is built with **Gradle** and targets **Android**, **iOS**, and **JVM** platforms.
+To build and publish the artifacts for all supported targets locally, use:
+```
+./gradlew publishAllPublicationsToMavenLocalRepository
+```
+Note: you need to use a mac to build or use iOS artifacts. Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+
 
 ## API Documentation
 API documentation & class diagrams are available
