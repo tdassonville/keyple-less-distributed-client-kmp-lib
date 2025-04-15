@@ -20,8 +20,10 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import org.eclipse.keyple.keypleless.distributed.client.spi.CardIOException
 import org.eclipse.keyple.keypleless.distributed.client.spi.LocalReader
 import org.eclipse.keyple.keypleless.distributed.client.spi.ReaderIOException
@@ -118,6 +120,53 @@ class KeypleTerminal(
     }
   }
 
+  @OptIn(ExperimentalUuidApi::class)
+  suspend fun executeRemoteService(
+      serviceId: String,
+      inputData: String? = null
+  ): KeypleResult<String?> {
+    val sessionId = Uuid.random().toString()
+
+    var cardSelectResponses = emptyList<CardSelectionResponse>()
+    selectionScenario?.let { cardSelectResponses = processCardSelectionScenario(it) }
+
+    val bodyContentStr =
+        if (inputData == null) {
+          json.encodeToString(
+              ExecuteRemoteServiceBody(
+                  serviceId = serviceId,
+                  inputData = null,
+                  initialCardContent = makeInitialCardContent(cardSelectResponses),
+                  initialCardContentClassName =
+                      if (cardSelectResponses.isEmpty()) null else "java.util.Properties",
+                  coreApiLevel = CORE_API_LEVEL))
+        } else {
+          val bodyJson = buildJsonObject {
+            put("isReaderContactless", true)
+            put("serviceId", serviceId)
+            if (cardSelectResponses.isNotEmpty()) {
+              put("initialCardContent", makeInitialCardContent(cardSelectResponses)!!)
+              put("initialCardContentClassName", "java.util.Properties")
+            }
+            put("coreApiLevel", CORE_API_LEVEL)
+            put("inputData", json.parseToJsonElement(inputData))
+          }
+          json.encodeToString(bodyJson)
+        }
+
+    val request =
+        MessageDTO(
+            apiLevel = API_LEVEL,
+            sessionId = sessionId,
+            action = EXECUTE_REMOTE_SERVICE,
+            clientNodeId = clientId,
+            localReaderName = "KeypleMobileNFCReader",
+            body = bodyContentStr,
+        )
+
+    return executeRemoteService(messageDTO = request)
+  }
+
   /**
    * Execute a remote service on the Keyple server. This suspend method will communicate back and
    * forth, over the network with the keyple server, and over NFC with the card. The server drives
@@ -158,12 +207,32 @@ class KeypleTerminal(
             sessionId = sessionId,
             action = EXECUTE_REMOTE_SERVICE,
             clientNodeId = clientId,
-            localReaderName = "KeypleMobileNFCReader",
+            localReaderName = reader.name(),
             body = json.encodeToString(bodyContent),
         )
 
+    return when (val res = executeRemoteService(request)) {
+      is KeypleResult.Success<String?> -> {
+        val rawStrData = res.data
+        rawStrData?.let {
+          try {
+            val output = json.decodeFromString(outputSerializer, rawStrData)
+            return KeypleResult.Success(output)
+          } catch (ex: Exception) {
+            KeypleResult.Failure(KeypleError(statusCode = -1, message = ex.message!!))
+          }
+        } ?: return KeypleResult.Success(null)
+      }
+      is KeypleResult.Failure<*> -> KeypleResult.Failure(res.error)
+    }
+  }
+
+  private suspend fun executeRemoteService(
+      messageDTO: MessageDTO,
+  ): KeypleResult<String?> {
+
     try {
-      var serverResponse = networkClient.sendRequest(request)[0]
+      var serverResponse = networkClient.sendRequest(messageDTO)[0]
 
       while (serverResponse.action != END_REMOTE_SERVICE) {
         Napier.d(tag = TAG, message = "Processing action ${serverResponse.action}")
@@ -184,7 +253,7 @@ class KeypleTerminal(
 
         val message =
             MessageDTO(
-                sessionId = sessionId,
+                sessionId = messageDTO.sessionId,
                 clientNodeId = clientId,
                 apiLevel = API_LEVEL,
                 action = RESP,
@@ -197,7 +266,7 @@ class KeypleTerminal(
 
       val outputData = jsonElement.jsonObject["outputData"]
       outputData?.let {
-        return KeypleResult.Success(json.decodeFromJsonElement(outputSerializer, outputData))
+        return KeypleResult.Success(json.encodeToString(outputData))
       } ?: return KeypleResult.Success(null)
     } catch (ex: Exception) {
       return KeypleResult.Failure(KeypleError(statusCode = -1, message = ex.message!!))

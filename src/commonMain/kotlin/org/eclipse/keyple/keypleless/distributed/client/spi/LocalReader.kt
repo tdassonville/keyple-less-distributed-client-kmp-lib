@@ -75,7 +75,7 @@ interface LocalReader {
    * These data being variable from one reader to another, they are defined here in string format
    * which can be either a hexadecimal string or any other relevant information.
    *
-   * @return a non empty String
+   * @return a String containing the power-on data, or an empty String
    */
   fun getPowerOnData(): String
 
