@@ -17,4 +17,14 @@ sealed class KeypleResult<T> {
   data class Failure<T>(val error: KeypleError) : KeypleResult<T>()
 }
 
+enum class StatusCode(val code: Int) {
+  SUCCESS(0),
+  UNKNOWN_ERROR(-1),
+  TAG_LOST(-2),
+  SERVER_ERROR(-3),
+  NETWORK_ERROR(-4),
+  READER_ERROR(-5),
+  INTERNAL_ERROR(-6),
+}
+
 data class KeypleError(val statusCode: Int, val message: String)

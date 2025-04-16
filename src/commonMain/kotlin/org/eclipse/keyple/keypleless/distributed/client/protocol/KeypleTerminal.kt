@@ -26,7 +26,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.eclipse.keyple.keypleless.distributed.client.spi.CardIOException
 import org.eclipse.keyple.keypleless.distributed.client.spi.LocalReader
-import org.eclipse.keyple.keypleless.distributed.client.spi.ReaderIOException
+import org.eclipse.keyple.keypleless.distributed.client.spi.ServerIOException
 import org.eclipse.keyple.keypleless.distributed.client.spi.SyncNetworkClient
 
 private const val TAG = "KeypleTerminal"
@@ -57,6 +57,7 @@ class KeypleTerminal(
     cardSelectionScenarioJsonString: String = ""
 ) {
   private var selectionScenario: CardSelectionScenario? = null
+  private var lastError: Exception? = null
 
   private val json = Json {
     ignoreUnknownKeys = true
@@ -219,7 +220,8 @@ class KeypleTerminal(
             val output = json.decodeFromString(outputSerializer, rawStrData)
             return KeypleResult.Success(output)
           } catch (ex: Exception) {
-            KeypleResult.Failure(KeypleError(statusCode = -1, message = ex.message!!))
+            KeypleResult.Failure(
+                KeypleError(statusCode = StatusCode.INTERNAL_ERROR.code, message = ex.message!!))
           }
         } ?: return KeypleResult.Success(null)
       }
@@ -230,6 +232,7 @@ class KeypleTerminal(
   private suspend fun executeRemoteService(
       messageDTO: MessageDTO,
   ): KeypleResult<String?> {
+    lastError = null
 
     try {
       var serverResponse = networkClient.sendRequest(messageDTO)[0]
@@ -247,7 +250,9 @@ class KeypleTerminal(
               TRANSMIT_CARD_REQUEST -> transmitCardRequest(serverResponse)
               else -> {
                 return KeypleResult.Failure(
-                    KeypleError(statusCode = -1, message = "Unknown request: $service"))
+                    KeypleError(
+                        statusCode = StatusCode.INTERNAL_ERROR.code,
+                        message = "Unknown request: $service"))
               }
             }
 
@@ -262,6 +267,13 @@ class KeypleTerminal(
         serverResponse = networkClient.sendRequest(message)[0]
       }
 
+      // If an error occurred locally, we want to return it to the caller; so we complete the
+      // transaction with the server but we ignore subsequent errors, as they are likely to be
+      // just noise and only the "root" error is relevant to the user.
+      lastError?.let {
+        return KeypleResult.Failure(
+            KeypleError(statusCode = makeStatusCode(it), message = it.message!!))
+      }
       val jsonElement = json.parseToJsonElement(serverResponse.body)
 
       val outputData = jsonElement.jsonObject["outputData"]
@@ -269,9 +281,42 @@ class KeypleTerminal(
         return KeypleResult.Success(json.encodeToString(outputData))
       } ?: return KeypleResult.Success(null)
     } catch (ex: Exception) {
-      return KeypleResult.Failure(KeypleError(statusCode = -1, message = ex.message!!))
+      lastError?.let {
+        // An error occurred previously, but a new error was thrown while we wanted to cleanly
+        // finish the current transaction.
+        // Let's return the previous error, as it's more probably actionable for the user.
+        return KeypleResult.Failure(
+            KeypleError(statusCode = makeStatusCode(it), message = it.message!!))
+      }
+      // No previous error, so we return the current one
+      when (ex) {
+        is ServerIOException -> {
+          return KeypleResult.Failure(
+              KeypleError(statusCode = StatusCode.NETWORK_ERROR.code, message = ex.message!!))
+        }
+        is CardIOException -> {
+          return KeypleResult.Failure(
+              KeypleError(statusCode = StatusCode.INTERNAL_ERROR.code, message = ex.message!!))
+        }
+      }
+      return KeypleResult.Failure(
+          KeypleError(statusCode = StatusCode.UNKNOWN_ERROR.code, message = ex.message!!))
     } finally {
       reader.closePhysicalChannel()
+    }
+  }
+
+  private fun makeStatusCode(error: Exception): Int {
+    return when (error) {
+      is CardIOException -> StatusCode.TAG_LOST
+      is ReaderNotFoundException -> StatusCode.READER_ERROR
+      else -> StatusCode.UNKNOWN_ERROR
+    }.code
+  }
+
+  private fun saveError(ex: Exception) {
+    if (lastError == null) {
+      lastError = ex
     }
   }
 
@@ -429,11 +474,11 @@ class KeypleTerminal(
         if (!apduRequest.successfulStatusWords.contains(apduResponse.statusWord)) {
           throw UnexpectedStatusWordException("Unexpected status word: ${apduResponse.statusWord}")
         }
-      } catch (e: ReaderIOException) {
-        reader.closePhysicalChannel()
-        throw e
-      } catch (e: CardIOException) {
-        reader.closePhysicalChannel()
+      } catch (e: Exception) {
+        if (e !is UnexpectedStatusWordException) {
+          saveError(e)
+          reader.closePhysicalChannel()
+        }
         throw e
       }
     }
@@ -449,6 +494,10 @@ class KeypleTerminal(
   @OptIn(ExperimentalStdlibApi::class)
   private suspend fun processApduRequest(apduRequest: ApduRequest): ApduResponse {
     val apdu = reader.transmitApdu(apduRequest.apdu.hexToByteArray())
+
+    if (apdu.size < 2) {
+      throw CardIOException("No response from card")
+    }
 
     if (apdu.size == 2) {
       messageProcessor.createRequest(apdu, apduRequest)?.let {
