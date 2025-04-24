@@ -20,6 +20,7 @@ class ServerIOException(override val message: String) : Exception(message)
  * [SimpleHttpNetworkClient](https://github.com/calypsonet/keyple-demo-ticketing-reloading-remote/blob/main/client/kmp/composeApp/src/commonMain/kotlin/org/calypsonet/keyple/demo/reload/remote/network/SimpleHttpNetworkClient.kt)
  * for an example implementation using Ktor with HTTP basic-auth. If you have more constraints, for
  * authentication for example, use this interface and implement your own authentication logics.
+ *
  * @since 1.0.0
  */
 interface SyncNetworkClient {
@@ -33,6 +34,5 @@ interface SyncNetworkClient {
    * @throws ServerIOException If an I/O error occurs while communicating with the server.
    * @since 1.0.0
    */
-  @Throws(ServerIOException::class)
-  suspend fun sendRequest(message: MessageDTO): List<MessageDTO>
+  @Throws(ServerIOException::class) suspend fun sendRequest(message: MessageDTO): List<MessageDTO>
 }

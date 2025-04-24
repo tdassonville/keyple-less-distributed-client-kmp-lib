@@ -37,19 +37,20 @@ private const val TAG = "KeypleTerminal"
  * of a NFC reader, and a NetworkClient, this object will handle the Card Selection Scenario if any,
  * connect the NFC Card to the Keyple server and execute the commands sent by the server.
  *
- * Use [waitForCard] for synchronous card detection or [waitForCard] with a callback parameter for asynchronous detection.
+ * Use [waitForCard] for synchronous card detection or [waitForCard] with a callback parameter for
+ * asynchronous detection.
  *
  * Then use [executeRemoteService] to start the Keyple transaction.
  *
+ * @param cardSelectionScenarioJsonString An optional Card Selection Strategy Json string. See
+ *   [Selection JSON Specification here](https://keyple.org/user-guides/non-keyple-client/selection-json-specification/)
+ *   to learn more
  * @property reader The NFC reader to use. Usually an instance of
  *   [NFC Reader](https://github.com/eclipse-keyple/keypleless-reader-nfcmobile-kmp-lib)
  * @property clientId A client ID for your Keyple server to identify this remote reader instance.
  * @property networkClient The network client to use. See
  *   [SimpleHttpNetworkClient](https://github.com/calypsonet/keyple-demo-ticketing-reloading-remote/blob/main/client/kmp/composeApp/src/commonMain/kotlin/org/calypsonet/keyple/demo/reload/remote/network/SimpleHttpNetworkClient.kt)
  *   for an example implementation
- * @param cardSelectionScenarioJsonString An optional Card Selection Strategy Json string. See
- *   [Selection JSON Specification here](https://keyple.org/user-guides/non-keyple-client/selection-json-specification/)
- *   to learn more
  */
 class KeypleTerminal(
     private val reader: LocalReader,
@@ -82,34 +83,34 @@ class KeypleTerminal(
     reader.setScanMessage(msg)
   }
 
-    /**
-     * Suspends until a card is detected.
-     *
-     * This function suspends the current coroutine and waits until a card is detected in the reader.
-     * It provides a coroutine-friendly alternative to synchronous polling or asynchronous callbacks,
-     * and should be called from within a coroutine scope.
-     *
-     * @return `true` if a card was successfully detected and is present.
-     * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
-     * @since 1.0.0
-     */
-    @Throws(ReaderIOException::class)
+  /**
+   * Suspends until a card is detected.
+   *
+   * This function suspends the current coroutine and waits until a card is detected in the reader.
+   * It provides a coroutine-friendly alternative to synchronous polling or asynchronous callbacks,
+   * and should be called from within a coroutine scope.
+   *
+   * @return `true` if a card was successfully detected and is present.
+   * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
+   * @since 1.0.0
+   */
+  @Throws(ReaderIOException::class)
   suspend fun waitForCard(): Boolean {
     return reader.waitForCardPresent()
   }
 
-    /**
-     * Starts monitoring the reader for card detection events asynchronously.
-     *
-     * When a card is detected in the reader, the provided [onCardFound] callback is invoked. This
-     * function does not block the calling thread and is suitable for use in event-driven or UI-based
-     * applications.
-     *
-     * @param onCardFound The callback function to invoke when a card is detected.
-     * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
-     * @since 1.0.0
-     */
-    @Throws(ReaderIOException::class)
+  /**
+   * Starts monitoring the reader for card detection events asynchronously.
+   *
+   * When a card is detected in the reader, the provided [onCardFound] callback is invoked. This
+   * function does not block the calling thread and is suitable for use in event-driven or UI-based
+   * applications.
+   *
+   * @param onCardFound The callback function to invoke when a card is detected.
+   * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
+   * @since 1.0.0
+   */
+  @Throws(ReaderIOException::class)
   fun waitForCard(onCardDetected: () -> Unit) {
     reader.startCardDetection { onCardDetected() }
   }
