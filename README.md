@@ -41,7 +41,7 @@ val keypleTerminal = KeypleTerminal(networkClient, nfcReader, "MY_CLIENT_ID")
 // Wait for a card to be presented (in iOS, this will trigger the system mandatory NFC popup)
 
 // Using the sync API (suspending):
-val cardFound = keypleService.waitCard() 
+val cardFound = keypleService.waitForCard() 
 if (cardFound) readContracts()
 
 // or using the Async API (callback)
