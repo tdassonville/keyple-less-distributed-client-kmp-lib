@@ -94,7 +94,7 @@ class KeypleTerminal(
    * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
    * @since 1.0.0
    */
-  @Throws(ReaderIOException::class)
+  @Throws(ReaderIOException::class, kotlin.coroutines.cancellation.CancellationException::class)
   suspend fun waitForCard(): Boolean {
     return reader.waitForCardPresent()
   }

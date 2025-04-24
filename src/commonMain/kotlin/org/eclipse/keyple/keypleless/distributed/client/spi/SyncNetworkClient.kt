@@ -34,5 +34,6 @@ interface SyncNetworkClient {
    * @throws ServerIOException If an I/O error occurs while communicating with the server.
    * @since 1.0.0
    */
-  @Throws(ServerIOException::class) suspend fun sendRequest(message: MessageDTO): List<MessageDTO>
+  @Throws(ServerIOException::class, kotlin.coroutines.cancellation.CancellationException::class)
+  suspend fun sendRequest(message: MessageDTO): List<MessageDTO>
 }

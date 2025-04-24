@@ -48,7 +48,8 @@ interface LocalReader {
    * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
    * @since 1.0.0
    */
-  @Throws(ReaderIOException::class) suspend fun waitForCardPresent(): Boolean
+  @Throws(ReaderIOException::class, kotlin.coroutines.cancellation.CancellationException::class)
+  suspend fun waitForCardPresent(): Boolean
 
   /**
    * Starts monitoring the reader for card detection events asynchronously.
