@@ -23,7 +23,8 @@ private const val SW2_MASK: Int = 0x00FF
 internal class MessageProcessor(private val json: Json) {
 
   fun isCardPresent(): String {
-    // TODO: maybe we need to be smarter here for desktop pcsc readers?...
+    // Here we always return "card present" as the flow imposed by this plugin makes it mandatory to
+    // have a card present to start communicating with the server.
     val resp = IsCardPresentRespBody(result = true)
     return json.encodeToString(resp)
   }

@@ -151,29 +151,19 @@ class KeypleTerminal(
     var cardSelectResponses = emptyList<CardSelectionResponse>()
     selectionScenario?.let { cardSelectResponses = processCardSelectionScenario(it) }
 
-    val bodyContentStr =
-        if (inputData == null) {
-          json.encodeToString(
-              ExecuteRemoteServiceBody(
-                  serviceId = serviceId,
-                  inputData = null,
-                  initialCardContent = makeInitialCardContent(cardSelectResponses),
-                  initialCardContentClassName =
-                      if (cardSelectResponses.isEmpty()) null else "java.util.Properties",
-                  coreApiLevel = CORE_API_LEVEL))
-        } else {
-          val bodyJson = buildJsonObject {
-            put("isReaderContactless", true)
-            put("serviceId", serviceId)
-            if (cardSelectResponses.isNotEmpty()) {
-              put("initialCardContent", makeInitialCardContent(cardSelectResponses)!!)
-              put("initialCardContentClassName", "java.util.Properties")
-            }
-            put("coreApiLevel", CORE_API_LEVEL)
-            put("inputData", json.parseToJsonElement(inputData))
-          }
-          json.encodeToString(bodyJson)
-        }
+    val bodyJson = buildJsonObject {
+      put("isReaderContactless", true)
+      put("serviceId", serviceId)
+      if (cardSelectResponses.isNotEmpty()) {
+        put("initialCardContent", makeInitialCardContent(cardSelectResponses)!!)
+        put("initialCardContentClassName", "java.util.Properties")
+      }
+      put("coreApiLevel", CORE_API_LEVEL)
+      if (inputData != null) {
+        put("inputData", json.parseToJsonElement(inputData))
+      }
+    }
+    val bodyContentStr = json.encodeToString(bodyJson)
 
     val request =
         MessageDTO(
@@ -200,14 +190,14 @@ class KeypleTerminal(
    *   is up to your business logic. For example it could contain a payment ID, a transaction ID, a
    *   customer reference, etc...
    * @param inputSerializer if an inputData is provided, you must provide the serializer for it.
-   * @param outputSerializer a deserializer used to return you the parsed output data.
+   * @param outputDeserializer a deserializer used to return you the parsed output data.
    */
   @OptIn(ExperimentalUuidApi::class)
   suspend fun <T, R> executeRemoteService(
       serviceId: String,
       inputData: T? = null,
       inputSerializer: KSerializer<T>,
-      outputSerializer: KSerializer<R>
+      outputDeserializer: KSerializer<R>
   ): KeypleResult<R?> {
     val sessionId = Uuid.random().toString()
 
@@ -237,7 +227,7 @@ class KeypleTerminal(
         val rawStrData = res.data
         rawStrData?.let {
           try {
-            val output = json.decodeFromString(outputSerializer, rawStrData)
+            val output = json.decodeFromString(outputDeserializer, rawStrData)
             return KeypleResult.Success(output)
           } catch (ex: Exception) {
             KeypleResult.Failure(
@@ -397,7 +387,9 @@ class KeypleTerminal(
                 transmitCardSelectionRequestsCmdBody.parameters.cardSelectionRequests[i],
                 transmitCardSelectionRequestsCmdBody.parameters.channelControl)
         cardSelectionResponses.add(cardSelectionResponse)
-        if (cardSelectionResponse.hasMatched) {
+        if (cardSelectionResponse.hasMatched &&
+            transmitCardSelectionRequestsCmdBody.parameters.multiSelectionProcessing ==
+                MultiSelectionProcessing.FIRST_MATCH) {
           break
         }
       } catch (ex: CardIOException) {
@@ -436,7 +428,8 @@ class KeypleTerminal(
                 scenario.defaultCardSelections[i].cardSelectionRequest,
                 scenario.channelControl)
         cardSelectionResponses.add(cardSelectionResponse)
-        if (cardSelectionResponse.hasMatched) {
+        if (cardSelectionResponse.hasMatched &&
+            scenario.multiSelectionProcessing == MultiSelectionProcessing.FIRST_MATCH) {
           break
         }
       } catch (ex: CardIOException) {
