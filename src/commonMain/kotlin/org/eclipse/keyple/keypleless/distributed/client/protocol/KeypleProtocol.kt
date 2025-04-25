@@ -201,5 +201,3 @@ internal data class CardResponse(
     val isLogicalChannelOpen: Boolean,
     val apduResponses: List<ApduResponse>,
 )
-
-class ReaderNotFoundException(message: String) : Exception(message)

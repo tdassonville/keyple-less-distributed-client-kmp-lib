@@ -26,6 +26,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.eclipse.keyple.keypleless.distributed.client.spi.CardIOException
 import org.eclipse.keyple.keypleless.distributed.client.spi.LocalReader
+import org.eclipse.keyple.keypleless.distributed.client.spi.ReaderIOException
 import org.eclipse.keyple.keypleless.distributed.client.spi.ServerIOException
 import org.eclipse.keyple.keypleless.distributed.client.spi.SyncNetworkClient
 
@@ -36,19 +37,20 @@ private const val TAG = "KeypleTerminal"
  * of a NFC reader, and a NetworkClient, this object will handle the Card Selection Scenario if any,
  * connect the NFC Card to the Keyple server and execute the commands sent by the server.
  *
- * Use @see waitCard() or @see waitForCardPresent() to trigger the NFC card detection.
+ * Use [waitForCard] for synchronous card detection or [waitForCard] with a callback parameter for
+ * asynchronous detection.
  *
- * Then use executeRemoteService() to start the Keyple transaction.
+ * Then use [executeRemoteService] to start the Keyple transaction.
  *
+ * @param cardSelectionScenarioJsonString An optional Card Selection Strategy Json string. See
+ *   [Selection JSON Specification here](https://keyple.org/user-guides/non-keyple-client/selection-json-specification/)
+ *   to learn more
  * @property reader The NFC reader to use. Usually an instance of
  *   [NFC Reader](https://github.com/eclipse-keyple/keypleless-reader-nfcmobile-kmp-lib)
  * @property clientId A client ID for your Keyple server to identify this remote reader instance.
  * @property networkClient The network client to use. See
  *   [SimpleHttpNetworkClient](https://github.com/calypsonet/keyple-demo-ticketing-reloading-remote/blob/main/client/kmp/composeApp/src/commonMain/kotlin/org/calypsonet/keyple/demo/reload/remote/network/SimpleHttpNetworkClient.kt)
  *   for an example implementation
- * @property cardSelectionScenarioJsonString An optionnal Card Selection Strategy Json string. See
- *   [Selection JSON Specification here](https://keyple.org/user-guides/non-keyple-client/selection-json-specification/)
- *   to learn more
  */
 class KeypleTerminal(
     private val reader: LocalReader,
@@ -81,18 +83,36 @@ class KeypleTerminal(
     reader.setScanMessage(msg)
   }
 
-  /** Wait (synchronously) for a card to be presented. */
+  /**
+   * Suspends until a card is detected.
+   *
+   * This function suspends the current coroutine and waits until a card is detected in the reader.
+   * It provides a coroutine-friendly alternative to synchronous polling or asynchronous callbacks,
+   * and should be called from within a coroutine scope.
+   *
+   * @return `true` if a card was successfully detected and is present.
+   * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
+   * @since 1.0.0
+   */
+  @Throws(ReaderIOException::class, kotlin.coroutines.cancellation.CancellationException::class)
   suspend fun waitForCard(): Boolean {
     return reader.waitForCardPresent()
   }
 
   /**
-   * Wait (asynchronously) for a card to be presented.
+   * Starts monitoring the reader for card detection events asynchronously.
    *
-   * @param onCard The callback that will be called when a card is detected.
+   * When a card is detected in the reader, the provided [onCardFound] callback is invoked. This
+   * function does not block the calling thread and is suitable for use in event-driven or UI-based
+   * applications.
+   *
+   * @param onCardFound The callback function to invoke when a card is detected.
+   * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
+   * @since 1.0.0
    */
-  fun waitForCard(onCard: () -> Unit) {
-    reader.startCardDetection { onCard() }
+  @Throws(ReaderIOException::class)
+  fun waitForCard(onCardDetected: () -> Unit) {
+    reader.startCardDetection { onCardDetected() }
   }
 
   /** Stop scanning for NFC cards. Release the reader resources. */
@@ -208,7 +228,7 @@ class KeypleTerminal(
             sessionId = sessionId,
             action = EXECUTE_REMOTE_SERVICE,
             clientNodeId = clientId,
-            localReaderName = reader.name(),
+            localReaderName = reader.getName(),
             body = json.encodeToString(bodyContent),
         )
 
@@ -309,7 +329,7 @@ class KeypleTerminal(
   private fun makeStatusCode(error: Exception): Int {
     return when (error) {
       is CardIOException -> StatusCode.TAG_LOST
-      is ReaderNotFoundException -> StatusCode.READER_ERROR
+      is ReaderIOException -> StatusCode.READER_ERROR
       else -> StatusCode.UNKNOWN_ERROR
     }.code
   }
@@ -350,7 +370,7 @@ class KeypleTerminal(
           processCardRequest(cardRequest, transmitCardRequestsCmdBody.parameters.channelControl)
     } catch (ex: CardIOException) {
       error = Error(code = ErrorCode.CARD_COMMUNICATION_ERROR, message = ex.message)
-    } catch (ex: ReaderNotFoundException) {
+    } catch (ex: ReaderIOException) {
       error = Error(code = ErrorCode.READER_COMMUNICATION_ERROR, message = ex.message)
     } catch (ex: UnexpectedStatusWordException) {
       error = Error(code = ErrorCode.CARD_COMMAND_ERROR, message = ex.message)
@@ -383,7 +403,7 @@ class KeypleTerminal(
       } catch (ex: CardIOException) {
         error = Error(code = ErrorCode.CARD_COMMUNICATION_ERROR, message = ex.message)
         break
-      } catch (ex: ReaderNotFoundException) {
+      } catch (ex: ReaderIOException) {
         error = Error(code = ErrorCode.READER_COMMUNICATION_ERROR, message = ex.message)
         break
       } catch (ex: UnexpectedStatusWordException) {
@@ -422,7 +442,7 @@ class KeypleTerminal(
       } catch (ex: CardIOException) {
         error = Error(code = ErrorCode.CARD_COMMUNICATION_ERROR, message = ex.message)
         break
-      } catch (ex: ReaderNotFoundException) {
+      } catch (ex: ReaderIOException) {
         error = Error(code = ErrorCode.READER_COMMUNICATION_ERROR, message = ex.message)
         break
       } catch (ex: UnexpectedStatusWordException) {

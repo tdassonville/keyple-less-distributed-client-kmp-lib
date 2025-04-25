@@ -19,53 +19,72 @@ class CardIOException(message: String) : Exception(message)
  * Local NFC reader abstraction. We provide a Kotlin Multiplatform implementation compatible with
  * iOS, Android and JVM based desktops using a PCSC reader (Windows, macOS, linux). You can provide
  * your own version or support different hardware by implementing this interface.
+ *
+ * @since 1.0.0
  */
 interface LocalReader {
-  /** @returns the name of this reader (mostly indicative) */
-  fun name(): String
+  /**
+   * @returns the name of this reader (mostly indicative)
+   * @since 1.0.0
+   */
+  fun getName(): String
 
   /**
    * Used to set the scan instructions to the user, for applicable NFC readers. Main usage is for
    * iOS: the provided msg is displayed in the iOS system-driven NFC popup
+   *
+   * @since 1.0.0
    */
   fun setScanMessage(msg: String)
 
   /**
-   * Waits (suspends) for a card to be detected
+   * Suspends until a card is detected.
    *
-   * @returns True if a card is detected, otherwise false
-   * @throws CancellationException
+   * This function suspends the current coroutine and waits until a card is detected in the reader.
+   * It provides a coroutine-friendly alternative to synchronous polling or asynchronous callbacks,
+   * and should be called from within a coroutine scope.
+   *
+   * @return `true` if a card was successfully detected and is present.
+   * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
+   * @since 1.0.0
    */
+  @Throws(ReaderIOException::class, kotlin.coroutines.cancellation.CancellationException::class)
   suspend fun waitForCardPresent(): Boolean
 
   /**
-   * Waits (asynchronously) for a card to be inserted in the reader, then triggers the provided
-   * callback.
+   * Starts monitoring the reader for card detection events asynchronously.
    *
-   * @param onCard The callback that will be called when a card is detected.
-   * @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.)
+   * When a card is detected in the reader, the provided [onCardDetected] callback is invoked. This
+   * function does not block the calling thread and is suitable for use in event-driven or UI-based
+   * applications.
+   *
+   * @param onCardDetected The callback function to invoke when a card is detected.
+   * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
+   * @since 1.0.0
    */
-  fun startCardDetection(onCardFound: () -> Unit)
+  @Throws(ReaderIOException::class) fun startCardDetection(onCardDetected: () -> Unit)
 
   /**
-   * Attempts to open the physical channel (to establish communication with the card).
+   * Attempts to open the physical channel with the card.
    *
-   * @throws ReaderIOException on IO error communicating with the reader (USB unplugged, etc.)
-   * @throws CardIOException on IO error with the card (card exited the NFC field, etc.)
+   * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
+   * @throws CardIOException If an I/O error occurs while communicating with the card.
+   * @since 1.0.0
    */
-  suspend fun openPhysicalChannel()
+  @Throws(ReaderIOException::class, CardIOException::class) fun openPhysicalChannel()
 
   /**
-   * Attempts to close the current physical channel. The physical channel may have been implicitly
-   * closed previously by a card withdrawal.
+   * Closes safely the current physical channel.
    *
-   * @throws ReaderNotFoundException If the communication with the reader has failed.
+   * The physical channel may have been implicitly closed previously by a card withdrawal.
+   *
+   * @since 1.0.0
    */
   fun closePhysicalChannel()
 
   /**
-   * Gets the power-on data. The power-on data is defined as the data retrieved by the reader when
-   * the card is inserted.
+   * Returns the power-on data. The power-on data is defined as the data retrieved by the reader
+   * when the card is detected.
    *
    * In the case of a contactless reader, the reader decides what this data is. Contactless readers
    * provide a virtual ATR (partially standardized by the PC/SC standard), but other devices can
@@ -76,6 +95,7 @@ interface LocalReader {
    * which can be either a hexadecimal string or any other relevant information.
    *
    * @return a String containing the power-on data, or an empty String
+   * @since 1.0.0
    */
   fun getPowerOnData(): String
 
@@ -83,13 +103,25 @@ interface LocalReader {
    * Transmits an Application Protocol Data Unit (APDU) command to the smart card and receives the
    * response.
    *
-   * @param commandApdu: The command APDU to be transmitted.
+   * @param commandApdu The command APDU to be transmitted.
    * @return The response APDU received from the smart card.
-   * @throws ReaderNotFoundException If the communication with the reader has failed.
-   * @throws CardIOException If the communication with the card has failed
+   * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
+   * @throws CardIOException If an I/O error occurs while communicating with the card.
+   * @since 1.0.0
    */
-  suspend fun transmitApdu(commandApdu: ByteArray): ByteArray
+  @Throws(ReaderIOException::class, CardIOException::class)
+  fun transmitApdu(commandApdu: ByteArray): ByteArray
 
-  /** Stop scanning for NFC cards. Release the reader resources. */
+  /**
+   * Releases the reader and safely stops any ongoing NFC polling operations.
+   *
+   * This method should be called when the reader is no longer needed, to clean up system resources
+   * and stop background processes such as card detection or polling loops.
+   *
+   * Implementations must ensure that the reader is left in a clean and reusable state after this
+   * call.
+   *
+   * @since 1.0.0
+   */
   fun release()
 }
