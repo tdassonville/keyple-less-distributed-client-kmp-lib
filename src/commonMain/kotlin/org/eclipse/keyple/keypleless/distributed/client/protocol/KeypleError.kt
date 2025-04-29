@@ -14,7 +14,7 @@ package org.eclipse.keyple.keypleless.distributed.client.protocol
 sealed class KeypleResult<T> {
   data class Success<T>(val data: T) : KeypleResult<T>()
 
-  data class Failure<T>(val error: KeypleError) : KeypleResult<T>()
+  data class Failure<T>(val error: KeypleError, val data: T? = null) : KeypleResult<T>()
 }
 
 enum class StatusCode(val code: Int) {

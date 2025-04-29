@@ -224,18 +224,18 @@ class KeypleTerminal(
 
     return when (val res = executeRemoteService(request)) {
       is KeypleResult.Success<String?> -> {
-        val rawStrData = res.data
-        rawStrData?.let {
           try {
-            val output = json.decodeFromString(outputDeserializer, rawStrData)
-            return KeypleResult.Success(output)
+              val data = res.data?.let { json.decodeFromString(outputDeserializer, it) }
+              KeypleResult.Success(data)
           } catch (ex: Exception) {
             KeypleResult.Failure(
                 KeypleError(statusCode = StatusCode.INTERNAL_ERROR.code, message = ex.message!!))
           }
-        } ?: return KeypleResult.Success(null)
+        }
+      is KeypleResult.Failure<String?> -> {
+          val data = res.data?.let { json.decodeFromString(outputDeserializer, it) }
+          KeypleResult.Failure(res.error, data)
       }
-      is KeypleResult.Failure<*> -> KeypleResult.Failure(res.error)
     }
   }
 
@@ -277,19 +277,21 @@ class KeypleTerminal(
         serverResponse = networkClient.sendRequest(message)[0]
       }
 
-      // If an error occurred locally, we want to return it to the caller; so we complete the
-      // transaction with the server but we ignore subsequent errors, as they are likely to be
-      // just noise and only the "root" error is relevant to the user.
-      lastError?.let {
-        return KeypleResult.Failure(
-            KeypleError(statusCode = makeStatusCode(it), message = it.message!!))
-      }
       val jsonElement = json.parseToJsonElement(serverResponse.body)
-
       val outputData = jsonElement.jsonObject["outputData"]
-      outputData?.let {
-        return KeypleResult.Success(json.encodeToString(outputData))
-      } ?: return KeypleResult.Success(null)
+        val outputDataString = outputData?.let { json.encodeToString(outputData) }
+
+        // If an error occurred locally, we want to return it to the caller; so we complete the
+        // transaction with the server but we ignore subsequent errors, as they are likely to be
+        // just noise and only the "root" error is relevant to the user. But we include any payload
+        // the server might have attached, so the caller can decide what to do...
+        lastError?.let {
+            return KeypleResult.Failure(
+                error = KeypleError(statusCode = makeStatusCode(it), message = it.message!!),
+                data = outputDataString
+            )
+        }
+      return KeypleResult.Success(outputDataString)
     } catch (ex: Exception) {
       lastError?.let {
         // An error occurred previously, but a new error was thrown while we wanted to cleanly
