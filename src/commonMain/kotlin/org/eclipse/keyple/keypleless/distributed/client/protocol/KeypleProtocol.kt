@@ -29,6 +29,8 @@ const val TRANSMIT_CARD_SELECTION_REQUESTS = "TRANSMIT_CARD_SELECTION_REQUESTS"
 
 const val TRANSMIT_CARD_REQUEST = "TRANSMIT_CARD_REQUEST"
 
+internal class UnexpectedStatusWordException(message: String) : Exception(message)
+
 @Serializable
 data class MessageDTO(
     var apiLevel: Int = API_LEVEL,
@@ -52,13 +54,13 @@ internal data class ExecuteRemoteServiceBody<T>(
 )
 
 @Serializable
-data class Error(
+internal data class Error(
     val message: String? = null,
     val code: ErrorCode,
 )
 
 @Serializable
-enum class ErrorCode {
+internal enum class ErrorCode {
   READER_COMMUNICATION_ERROR,
   CARD_COMMUNICATION_ERROR,
   CARD_COMMAND_ERROR,

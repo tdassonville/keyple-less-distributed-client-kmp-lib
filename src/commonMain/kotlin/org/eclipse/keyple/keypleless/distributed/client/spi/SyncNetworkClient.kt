@@ -13,7 +13,7 @@ package org.eclipse.keyple.keypleless.distributed.client.spi
 
 import org.eclipse.keyple.keypleless.distributed.client.protocol.MessageDTO
 
-class ServerIOException(override val message: String) : Exception(message)
+class ServerIOException(msg: String) : Exception(msg)
 
 /**
  * The network transmission abstraction used to communicate with a Keyple server. See

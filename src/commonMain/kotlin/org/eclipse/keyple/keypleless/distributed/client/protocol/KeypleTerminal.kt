@@ -528,5 +528,3 @@ class KeypleTerminal(
     reader.release()
   }
 }
-
-class UnexpectedStatusWordException(message: String) : Exception(message)
