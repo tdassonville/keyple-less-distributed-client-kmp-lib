@@ -9,7 +9,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.keypleless.distributed.client.spi
+package org.eclipse.keyple.interop.jsonapi.client.spi
 
 class ReaderIOException(message: String) : Exception(message)
 

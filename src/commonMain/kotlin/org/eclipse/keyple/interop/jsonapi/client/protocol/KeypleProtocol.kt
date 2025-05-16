@@ -9,7 +9,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.keypleless.distributed.client.protocol
+package org.eclipse.keyple.interop.jsonapi.client.protocol
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement

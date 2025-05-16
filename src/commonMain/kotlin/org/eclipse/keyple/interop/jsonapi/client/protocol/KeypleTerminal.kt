@@ -11,7 +11,7 @@
  ************************************************************************************** */
 @file:OptIn(ExperimentalStdlibApi::class)
 
-package org.eclipse.keyple.keypleless.distributed.client.protocol
+package org.eclipse.keyple.interop.jsonapi.client.protocol
 
 import io.github.aakira.napier.Napier
 import kotlin.uuid.ExperimentalUuidApi
@@ -24,11 +24,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
-import org.eclipse.keyple.keypleless.distributed.client.spi.CardIOException
-import org.eclipse.keyple.keypleless.distributed.client.spi.LocalReader
-import org.eclipse.keyple.keypleless.distributed.client.spi.ReaderIOException
-import org.eclipse.keyple.keypleless.distributed.client.spi.ServerIOException
-import org.eclipse.keyple.keypleless.distributed.client.spi.SyncNetworkClient
+import org.eclipse.keyple.interop.jsonapi.client.spi.CardIOException
+import org.eclipse.keyple.interop.jsonapi.client.spi.LocalReader
+import org.eclipse.keyple.interop.jsonapi.client.spi.ReaderIOException
+import org.eclipse.keyple.interop.jsonapi.client.spi.ServerIOException
+import org.eclipse.keyple.interop.jsonapi.client.spi.SyncNetworkClient
 
 private const val TAG = "KeypleTerminal"
 
@@ -46,7 +46,7 @@ private const val TAG = "KeypleTerminal"
  *   [Selection JSON Specification here](https://keyple.org/user-guides/non-keyple-client/selection-json-specification/)
  *   to learn more
  * @property reader The NFC reader to use. Usually an instance of
- *   [NFC Reader](https://github.com/eclipse-keyple/keypleless-reader-nfcmobile-kmp-lib)
+ *   [NFC Reader](https://github.com/eclipse-keyple/keyple-interop-localreader-nfcmobile-kmp-lib)
  * @property clientId A client ID for your Keyple server to identify this remote reader instance.
  * @property networkClient The network client to use. See
  *   [SimpleHttpNetworkClient](https://github.com/calypsonet/keyple-demo-ticketing-reloading-remote/blob/main/client/kmp/composeApp/src/commonMain/kotlin/org/calypsonet/keyple/demo/reload/remote/network/SimpleHttpNetworkClient.kt)
@@ -228,7 +228,8 @@ class KeypleTerminal(
             initialCardContent = makeInitialCardContent(cardSelectResponses),
             initialCardContentClassName =
                 if (cardSelectResponses.isEmpty()) null else "java.util.Properties",
-            coreApiLevel = CORE_API_LEVEL)
+            coreApiLevel = CORE_API_LEVEL
+        )
     val request =
         MessageDTO(
             apiLevel = API_LEVEL,
@@ -353,7 +354,8 @@ class KeypleTerminal(
       null
     } else {
       json.encodeToJsonElement(
-          ProcessedCardSelectionScenario(json.encodeToString(cardSelectResponses)))
+          ProcessedCardSelectionScenario(json.encodeToString(cardSelectResponses))
+      )
     }
   }
 

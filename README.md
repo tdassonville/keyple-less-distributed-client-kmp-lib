@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Keyple Distributed Client KMP Library** is a Kotlin Multiplatform implementation enabling distributed remote
+The **Keyple Interop Distributed JSON Client Library** is a Kotlin Multiplatform implementation enabling distributed remote
 client communications across Android, iOS and desktop platforms. This library provides a distributed architecture layer
 for remote terminals, making it easier to develop cross-platform applications connecting to a Keyple server.
 
@@ -25,7 +25,7 @@ Note: you need to use a mac to build or use iOS artifacts. Learn more about [Kot
 
 ## API Documentation
 API documentation & class diagrams are available
-at [docs.keyple.org/keypleless-distributed-client-kmp-lib](https://docs.keyple.org/keypleless-distributed-client-kmp-lib/)
+at [docs.keyple.org/keyple-interop-jsonapi-client-kmp-lib](https://docs.keyple.org/keyple-interop-jsonapi-client-kmp-lib/)
 
 You will need to provide two implementations to use this library: a network client, and a Local NFC reader.
 
@@ -33,7 +33,7 @@ You will need to provide two implementations to use this library: a network clie
   See the [demo app](https://github.com/calypsonet/keyple-demo-ticketing-reloading-remote/blob/main/client/kmp/composeApp/src/commonMain/kotlin/org/calypsonet/keyple/demo/reload/remote/network/SimpleHttpNetworkClient.kt) for a simple example, using Ktor with HTTP basic-auth.
 
 * The Local NFC reader provides the actual NFC communication depending on the platform.
-  For most use cases, you can just use the provided [mobile NFC Reader lib](https://github.com/eclipse-keyple/keypleless-reader-nfcmobile-kmp-lib) that supports Android, iOS and JVM desktop (using PC/SC NFC readers) out of the box.
+  For most use cases, you can just use the provided [mobile NFC Reader lib](https://github.com/eclipse-keyple/keyple-interop-jsonapi-client-kmp-lib) that supports Android, iOS and JVM desktop (using PC/SC NFC readers) out of the box.
 
 Create a KeypleTerminal object and wait for a NFC card to be presented:
 ```kotlin

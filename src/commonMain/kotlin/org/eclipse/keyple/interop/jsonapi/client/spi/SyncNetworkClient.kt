@@ -9,9 +9,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.keypleless.distributed.client.spi
+package org.eclipse.keyple.interop.jsonapi.client.spi
 
-import org.eclipse.keyple.keypleless.distributed.client.protocol.MessageDTO
+import org.eclipse.keyple.interop.jsonapi.client.protocol.MessageDTO
 
 class ServerIOException(msg: String) : Exception(msg)
 
