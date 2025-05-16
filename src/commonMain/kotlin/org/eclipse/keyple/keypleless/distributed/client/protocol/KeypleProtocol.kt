@@ -31,6 +31,29 @@ const val TRANSMIT_CARD_REQUEST = "TRANSMIT_CARD_REQUEST"
 
 internal class UnexpectedStatusWordException(message: String) : Exception(message)
 
+/**
+ * KeypleResult wraps the result of a Keyple operation. It can be either a [Success] or a [Failure].
+ * In case of a [Failure], we provide the error status and message but also the data
+ * provided by the server. It's up to your business logic to decide what to do with it.
+ * @param T The type of the data associated with the result, so it can be deserialized for you.
+ * It is a convention between your keyple server and your client app.
+ */
+sealed class KeypleResult<out T> {
+    data class Success<T>(val data: T) : KeypleResult<T>()
+
+    data class Failure<T>(val status: Status, val message: String, val data: T? = null) : KeypleResult<T>()
+}
+
+@Serializable
+enum class Status {
+    UNKNOWN_ERROR,
+    TAG_LOST,
+    SERVER_ERROR,
+    NETWORK_ERROR,
+    READER_ERROR,
+    INTERNAL_ERROR,
+}
+
 @Serializable
 data class MessageDTO(
     var apiLevel: Int = API_LEVEL,
@@ -44,11 +67,11 @@ data class MessageDTO(
 )
 
 @Serializable
-internal data class ExecuteRemoteServiceBody<T>(
+internal data class ExecuteRemoteServiceBody(
     val coreApiLevel: Int,
     val serviceId: String,
     val isReaderContactless: Boolean = true,
-    val inputData: T?,
+    val inputData: JsonElement?,
     val initialCardContent: JsonElement? = null,
     val initialCardContentClassName: String? = null
 )

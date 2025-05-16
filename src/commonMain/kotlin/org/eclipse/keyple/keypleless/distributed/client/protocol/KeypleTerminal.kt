@@ -141,7 +141,22 @@ class KeypleTerminal(
     }
   }
 
-  @OptIn(ExperimentalUuidApi::class)
+    /**
+     * Execute a remote service on the Keyple server. This suspend method will communicate back and
+     * forth, over the network with the keyple server, and over NFC with the card. The server drives
+     * the transaction, requesting the card to execute APDU commands. APDU responses are sent back to
+     * the server, that can process them and decide to send new APDU commands to execute, as many time
+     * as needed.
+     *
+     * @param serviceId A mandatory service identifier (as defined on your Keyple server)
+     * @param inputData optionnal - A JSON String representing extra data your keyple server may need to
+     *  execute this service. It must be a valid json serialized object, but its content is up to
+     *  your business logic. For example it could contain a payment ID, a transaction ID, a
+     *  customer's reference, etc...
+     *
+     * @return A KeypleResult object describing the result of the operation.
+     */
+    @OptIn(ExperimentalUuidApi::class)
   suspend fun executeRemoteService(
       serviceId: String,
       inputData: String? = null
@@ -191,6 +206,8 @@ class KeypleTerminal(
    *   customer reference, etc...
    * @param inputSerializer if an inputData is provided, you must provide the serializer for it.
    * @param outputDeserializer a deserializer used to return you the parsed output data.
+   *
+   * @return A KeypleResult object describing the result of the operation.
    */
   @OptIn(ExperimentalUuidApi::class)
   suspend fun <T, R> executeRemoteService(
@@ -228,13 +245,12 @@ class KeypleTerminal(
               val data = res.data?.let { json.decodeFromString(outputDeserializer, it) }
               KeypleResult.Success(data)
           } catch (ex: Exception) {
-            KeypleResult.Failure(
-                KeypleError(statusCode = StatusCode.INTERNAL_ERROR.code, message = ex.message!!))
+            KeypleResult.Failure(status = Status.INTERNAL_ERROR, message = ex.message!!)
           }
         }
       is KeypleResult.Failure<String?> -> {
           val data = res.data?.let { json.decodeFromString(outputDeserializer, it) }
-          KeypleResult.Failure(res.error, data)
+          KeypleResult.Failure(res.status, res.message, data)
       }
     }
   }
@@ -260,9 +276,9 @@ class KeypleTerminal(
               TRANSMIT_CARD_REQUEST -> transmitCardRequest(serverResponse)
               else -> {
                 return KeypleResult.Failure(
-                    KeypleError(
-                        statusCode = StatusCode.INTERNAL_ERROR.code,
-                        message = "Unknown request: $service"))
+                    status = Status.INTERNAL_ERROR,
+                    message = "Unknown request: $service"
+                )
               }
             }
 
@@ -287,7 +303,8 @@ class KeypleTerminal(
         // the server might have attached, so the caller can decide what to do...
         lastError?.let {
             return KeypleResult.Failure(
-                error = KeypleError(statusCode = makeStatusCode(it), message = it.message!!),
+                status = makeStatusCode(it),
+                message = it.message!!,
                 data = outputDataString
             )
         }
@@ -297,33 +314,30 @@ class KeypleTerminal(
         // An error occurred previously, but a new error was thrown while we wanted to cleanly
         // finish the current transaction.
         // Let's return the previous error, as it's more probably actionable for the user.
-        return KeypleResult.Failure(
-            KeypleError(statusCode = makeStatusCode(it), message = it.message!!))
+        return KeypleResult.Failure(status = makeStatusCode(it), message = it.message!!)
       }
       // No previous error, so we return the current one
       when (ex) {
         is ServerIOException -> {
-          return KeypleResult.Failure(
-              KeypleError(statusCode = StatusCode.NETWORK_ERROR.code, message = ex.message!!))
+          return KeypleResult.Failure(status = Status.NETWORK_ERROR,
+              message = ex.message!!)
         }
         is CardIOException -> {
-          return KeypleResult.Failure(
-              KeypleError(statusCode = StatusCode.INTERNAL_ERROR.code, message = ex.message!!))
+          return KeypleResult.Failure(status = Status.INTERNAL_ERROR, message = ex.message!!)
         }
       }
-      return KeypleResult.Failure(
-          KeypleError(statusCode = StatusCode.UNKNOWN_ERROR.code, message = ex.message!!))
+      return KeypleResult.Failure(status = Status.UNKNOWN_ERROR, message = ex.message!!)
     } finally {
       reader.closePhysicalChannel()
     }
   }
 
-  private fun makeStatusCode(error: Exception): Int {
+  private fun makeStatusCode(error: Exception): Status {
     return when (error) {
-      is CardIOException -> StatusCode.TAG_LOST
-      is ReaderIOException -> StatusCode.READER_ERROR
-      else -> StatusCode.UNKNOWN_ERROR
-    }.code
+      is CardIOException -> Status.TAG_LOST
+      is ReaderIOException -> Status.READER_ERROR
+      else -> Status.UNKNOWN_ERROR
+    }
   }
 
   private fun saveError(ex: Exception) {
