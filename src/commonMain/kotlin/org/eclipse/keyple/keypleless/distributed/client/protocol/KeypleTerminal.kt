@@ -364,7 +364,7 @@ class KeypleTerminal(
     return json.encodeToJsonElement(inputSerializer, inputData)
   }
 
-  private suspend fun transmitCardRequest(message: MessageDTO): String {
+  private fun transmitCardRequest(message: MessageDTO): String {
     val transmitCardRequestsCmdBody: TransmitCardRequestCmdBody =
         json.decodeFromString(message.body)
     val cardRequest = transmitCardRequestsCmdBody.parameters.cardRequest
@@ -388,7 +388,7 @@ class KeypleTerminal(
     return json.encodeToString(TransmitCardRequestRespBody(result = cardResponse))
   }
 
-  private suspend fun transmitCardSelectionRequests(message: MessageDTO): String {
+  private fun transmitCardSelectionRequests(message: MessageDTO): String {
     val transmitCardSelectionRequestsCmdBody: TransmitCardSelectionRequestsCmdBody =
         json.decodeFromString(message.body)
     val cardSelectionResponses = mutableListOf<CardSelectionResponse>()
@@ -429,7 +429,7 @@ class KeypleTerminal(
     return json.encodeToString(transmitCardSelectionRequestsRespBody)
   }
 
-  private suspend fun processCardSelectionScenario(
+  private fun processCardSelectionScenario(
       scenario: CardSelectionScenario
   ): List<CardSelectionResponse> {
     val cardSelectionResponses = mutableListOf<CardSelectionResponse>()
@@ -462,7 +462,7 @@ class KeypleTerminal(
     return if (error == null) cardSelectionResponses else emptyList()
   }
 
-  private suspend fun processCardSelectionRequest(
+  private fun processCardSelectionRequest(
       cardSelector: CardSelector,
       cardSelectionRequest: CardSelectionRequest,
       channelControl: ChannelControl
@@ -488,7 +488,7 @@ class KeypleTerminal(
     return cardSelectionResponse
   }
 
-  private suspend fun processCardRequest(
+  private fun processCardRequest(
       cardRequest: CardRequest,
       channelControl: ChannelControl
   ): CardResponse {
@@ -521,7 +521,7 @@ class KeypleTerminal(
   }
 
   @OptIn(ExperimentalStdlibApi::class)
-  private suspend fun processApduRequest(apduRequest: ApduRequest): ApduResponse {
+  private fun processApduRequest(apduRequest: ApduRequest): ApduResponse {
     val apdu = reader.transmitApdu(apduRequest.apdu.hexToByteArray())
 
     if (apdu.size < 2) {
