@@ -9,7 +9,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.keypleless.distributed.client.protocol
+package org.eclipse.keyple.interop.jsonapi.client.protocol
 
 import kotlin.experimental.or
 import kotlinx.serialization.encodeToString
@@ -22,13 +22,9 @@ private const val SW2_MASK: Int = 0x00FF
 
 internal class MessageProcessor(private val json: Json) {
 
-  fun isContactless(): String {
-    val resp = IsContactlessRespBody(result = true)
-    return json.encodeToString(resp)
-  }
-
   fun isCardPresent(): String {
-    // TODO: maybe we need to be smarter here?...
+    // Here we always return "card present" as the flow imposed by this plugin makes it mandatory to
+    // have a card present to start communicating with the server.
     val resp = IsCardPresentRespBody(result = true)
     return json.encodeToString(resp)
   }

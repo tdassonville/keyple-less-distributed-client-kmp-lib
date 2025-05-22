@@ -9,9 +9,10 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.keypleless.distributed.client.protocol
+package org.eclipse.keyple.interop.jsonapi.client.protocol
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 const val API_LEVEL = 3
 const val CORE_API_LEVEL = 2
@@ -22,13 +23,36 @@ const val END_REMOTE_SERVICE = "END_REMOTE_SERVICE"
 
 const val RESP = "RESP"
 
-const val IS_CONTACTLESS = "IS_CONTACTLESS"
-
 const val IS_CARD_PRESENT = "IS_CARD_PRESENT"
 
 const val TRANSMIT_CARD_SELECTION_REQUESTS = "TRANSMIT_CARD_SELECTION_REQUESTS"
 
 const val TRANSMIT_CARD_REQUEST = "TRANSMIT_CARD_REQUEST"
+
+internal class UnexpectedStatusWordException(message: String) : Exception(message)
+
+/**
+ * KeypleResult wraps the result of a Keyple operation. It can be either a [Success] or a [Failure].
+ * In case of a [Failure], we provide the error status and message but also the data
+ * provided by the server. It's up to your business logic to decide what to do with it.
+ * @param T The type of the data associated with the result, so it can be deserialized for you.
+ * It is a convention between your keyple server and your client app.
+ */
+sealed class KeypleResult<out T> {
+    data class Success<T>(val data: T) : KeypleResult<T>()
+
+    data class Failure<T>(val status: Status, val message: String, val data: T? = null) : KeypleResult<T>()
+}
+
+@Serializable
+enum class Status {
+    UNKNOWN_ERROR,
+    TAG_LOST,
+    SERVER_ERROR,
+    NETWORK_ERROR,
+    READER_ERROR,
+    INTERNAL_ERROR,
+}
 
 @Serializable
 data class MessageDTO(
@@ -43,21 +67,23 @@ data class MessageDTO(
 )
 
 @Serializable
-internal data class ExecuteRemoteServiceBody<T>(
+internal data class ExecuteRemoteServiceBody(
     val coreApiLevel: Int,
     val serviceId: String,
     val isReaderContactless: Boolean = true,
-    val inputData: T?
+    val inputData: JsonElement?,
+    val initialCardContent: JsonElement? = null,
+    val initialCardContentClassName: String? = null
 )
 
 @Serializable
-data class Error(
+internal data class Error(
     val message: String? = null,
     val code: ErrorCode,
 )
 
 @Serializable
-enum class ErrorCode {
+internal enum class ErrorCode {
   READER_COMMUNICATION_ERROR,
   CARD_COMMUNICATION_ERROR,
   CARD_COMMAND_ERROR,
@@ -67,14 +93,6 @@ enum class ErrorCode {
 internal data class CmdBody(
     val coreApiLevel: Int = CORE_API_LEVEL,
     val service: String,
-)
-
-@Serializable
-internal data class IsContactlessRespBody(
-    val coreApiLevel: Int = CORE_API_LEVEL,
-    val service: String = "IS_CONTACTLESS",
-    val result: Boolean?,
-    val error: Error? = null
 )
 
 @Serializable
@@ -208,5 +226,3 @@ internal data class CardResponse(
     val isLogicalChannelOpen: Boolean,
     val apduResponses: List<ApduResponse>,
 )
-
-class ReaderNotFoundException(message: String) : Exception(message)

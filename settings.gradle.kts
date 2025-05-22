@@ -1,4 +1,4 @@
-rootProject.name = "keypleless-distributed-client-kmp-lib"
+rootProject.name = "keyple-interop-jsonapi-client-kmp-lib"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
