@@ -11,9 +11,10 @@
  ************************************************************************************** */
 @file:OptIn(ExperimentalStdlibApi::class)
 
-package org.eclipse.keyple.interop.jsonapi.client.protocol
+package org.eclipse.keyple.interop.jsonapi.client.api
 
 import io.github.aakira.napier.Napier
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlinx.serialization.KSerializer
@@ -24,13 +25,31 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
-import org.eclipse.keyple.interop.jsonapi.client.spi.CardIOException
+import org.eclipse.keyple.interop.jsonapi.client.internal.Constants.API_LEVEL
+import org.eclipse.keyple.interop.jsonapi.client.internal.Constants.CORE_API_LEVEL
+import org.eclipse.keyple.interop.jsonapi.client.internal.MessageProcessor
+import org.eclipse.keyple.interop.jsonapi.client.internal.UnexpectedStatusWordException
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.ApduRequest
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.CardRequest
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.CardSelectionRequest
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.CardSelector
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.ChannelControl
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.CmdBody
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.MultiSelectionProcessing
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.TransmitCardRequestCmdBody
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.TransmitCardSelectionRequestsCmdBody
+import org.eclipse.keyple.interop.jsonapi.client.internal.executeremoteservice.ExecuteRemoteServiceBody
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.ApduResponse
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.CardResponse
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.CardSelectionResponse
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.Error
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.ErrorCode
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.TransmitCardRequestRespBody
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.TransmitCardSelectionRequestsRespBody
+import org.eclipse.keyple.interop.jsonapi.client.internal.selection.CardSelectionScenario
+import org.eclipse.keyple.interop.jsonapi.client.internal.selection.ProcessedCardSelectionScenario
 import org.eclipse.keyple.interop.jsonapi.client.spi.LocalReader
-import org.eclipse.keyple.interop.jsonapi.client.spi.ReaderIOException
-import org.eclipse.keyple.interop.jsonapi.client.spi.ServerIOException
 import org.eclipse.keyple.interop.jsonapi.client.spi.SyncNetworkClient
-
-private const val TAG = "KeypleTerminal"
 
 /**
  * KeypleTerminal is the entry point to the Keyple Distributed Client Library. Provided an instance
@@ -58,6 +77,17 @@ class KeypleTerminal(
     private val networkClient: SyncNetworkClient,
     cardSelectionScenarioJsonString: String = ""
 ) {
+
+  private companion object {
+    private const val TAG = "KeypleTerminal"
+    private const val EXECUTE_REMOTE_SERVICE = "EXECUTE_REMOTE_SERVICE"
+    private const val END_REMOTE_SERVICE = "END_REMOTE_SERVICE"
+    private const val RESP = "RESP"
+    private const val IS_CARD_PRESENT = "IS_CARD_PRESENT"
+    private const val TRANSMIT_CARD_SELECTION_REQUESTS = "TRANSMIT_CARD_SELECTION_REQUESTS"
+    private const val TRANSMIT_CARD_REQUEST = "TRANSMIT_CARD_REQUEST"
+  }
+
   private var selectionScenario: CardSelectionScenario? = null
   private var lastError: Exception? = null
 
@@ -77,10 +107,10 @@ class KeypleTerminal(
    * Set the scan instructions to the user, for applicable NFC readers. (Displayed on the iOS system
    * "NFC reader" popup)
    *
-   * @param msg The message to display, already localized.
+   * @param message The message to display, already localized.
    */
-  fun setScanMessage(msg: String) {
-    reader.setScanMessage(msg)
+  fun setScanMessage(message: String) {
+    reader.setScanMessage(message)
   }
 
   /**
@@ -94,7 +124,7 @@ class KeypleTerminal(
    * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
    * @since 1.0.0
    */
-  @Throws(ReaderIOException::class, kotlin.coroutines.cancellation.CancellationException::class)
+  @Throws(ReaderIOException::class, CancellationException::class)
   suspend fun waitForCard(): Boolean {
     return reader.waitForCardPresent()
   }
@@ -102,11 +132,11 @@ class KeypleTerminal(
   /**
    * Starts monitoring the reader for card detection events asynchronously.
    *
-   * When a card is detected in the reader, the provided [onCardFound] callback is invoked. This
+   * When a card is detected in the reader, the provided [onCardDetected] callback is invoked. This
    * function does not block the calling thread and is suitable for use in event-driven or UI-based
    * applications.
    *
-   * @param onCardFound The callback function to invoke when a card is detected.
+   * @param onCardDetected The callback function to invoke when a card is detected.
    * @throws ReaderIOException If an I/O error occurs while communicating with the reader.
    * @since 1.0.0
    */
@@ -141,22 +171,21 @@ class KeypleTerminal(
     }
   }
 
-    /**
-     * Execute a remote service on the Keyple server. This suspend method will communicate back and
-     * forth, over the network with the keyple server, and over NFC with the card. The server drives
-     * the transaction, requesting the card to execute APDU commands. APDU responses are sent back to
-     * the server, that can process them and decide to send new APDU commands to execute, as many time
-     * as needed.
-     *
-     * @param serviceId A mandatory service identifier (as defined on your Keyple server)
-     * @param inputData optionnal - A JSON String representing extra data your keyple server may need to
-     *  execute this service. It must be a valid json serialized object, but its content is up to
-     *  your business logic. For example it could contain a payment ID, a transaction ID, a
-     *  customer's reference, etc...
-     *
-     * @return A KeypleResult object describing the result of the operation.
-     */
-    @OptIn(ExperimentalUuidApi::class)
+  /**
+   * Execute a remote service on the Keyple server. This suspend method will communicate back and
+   * forth, over the network with the keyple server, and over NFC with the card. The server drives
+   * the transaction, requesting the card to execute APDU commands. APDU responses are sent back to
+   * the server, that can process them and decide to send new APDU commands to execute, as many time
+   * as needed.
+   *
+   * @param serviceId A mandatory service identifier (as defined on your Keyple server)
+   * @param inputData optionnal - A JSON String representing extra data your keyple server may need
+   *   to execute this service. It must be a valid json serialized object, but its content is up to
+   *   your business logic. For example it could contain a payment ID, a transaction ID, a
+   *   customer's reference, etc...
+   * @return A KeypleResult object describing the result of the operation.
+   */
+  @OptIn(ExperimentalUuidApi::class)
   suspend fun executeRemoteService(
       serviceId: String,
       inputData: String? = null
@@ -181,7 +210,7 @@ class KeypleTerminal(
     val bodyContentStr = json.encodeToString(bodyJson)
 
     val request =
-        MessageDTO(
+        MessageDto(
             apiLevel = API_LEVEL,
             sessionId = sessionId,
             action = EXECUTE_REMOTE_SERVICE,
@@ -206,7 +235,6 @@ class KeypleTerminal(
    *   customer reference, etc...
    * @param inputSerializer if an inputData is provided, you must provide the serializer for it.
    * @param outputDeserializer a deserializer used to return you the parsed output data.
-   *
    * @return A KeypleResult object describing the result of the operation.
    */
   @OptIn(ExperimentalUuidApi::class)
@@ -228,10 +256,9 @@ class KeypleTerminal(
             initialCardContent = makeInitialCardContent(cardSelectResponses),
             initialCardContentClassName =
                 if (cardSelectResponses.isEmpty()) null else "java.util.Properties",
-            coreApiLevel = CORE_API_LEVEL
-        )
+            coreApiLevel = CORE_API_LEVEL)
     val request =
-        MessageDTO(
+        MessageDto(
             apiLevel = API_LEVEL,
             sessionId = sessionId,
             action = EXECUTE_REMOTE_SERVICE,
@@ -242,22 +269,22 @@ class KeypleTerminal(
 
     return when (val res = executeRemoteService(request)) {
       is KeypleResult.Success<String?> -> {
-          try {
-              val data = res.data?.let { json.decodeFromString(outputDeserializer, it) }
-              KeypleResult.Success(data)
-          } catch (ex: Exception) {
-            KeypleResult.Failure(status = Status.INTERNAL_ERROR, message = ex.message!!)
-          }
-        }
-      is KeypleResult.Failure<String?> -> {
+        try {
           val data = res.data?.let { json.decodeFromString(outputDeserializer, it) }
-          KeypleResult.Failure(res.status, res.message, data)
+          KeypleResult.Success(data)
+        } catch (ex: Exception) {
+          KeypleResult.Failure(status = Status.INTERNAL_ERROR, message = ex.message!!)
+        }
+      }
+      is KeypleResult.Failure<String?> -> {
+        val data = res.data?.let { json.decodeFromString(outputDeserializer, it) }
+        KeypleResult.Failure(res.status, res.message, data)
       }
     }
   }
 
   private suspend fun executeRemoteService(
-      messageDTO: MessageDTO,
+      messageDTO: MessageDto,
   ): KeypleResult<String?> {
     lastError = null
 
@@ -277,14 +304,12 @@ class KeypleTerminal(
               TRANSMIT_CARD_REQUEST -> transmitCardRequest(serverResponse)
               else -> {
                 return KeypleResult.Failure(
-                    status = Status.INTERNAL_ERROR,
-                    message = "Unknown request: $service"
-                )
+                    status = Status.INTERNAL_ERROR, message = "Unknown request: $service")
               }
             }
 
         val message =
-            MessageDTO(
+            MessageDto(
                 sessionId = messageDTO.sessionId,
                 clientNodeId = clientId,
                 apiLevel = API_LEVEL,
@@ -296,19 +321,16 @@ class KeypleTerminal(
 
       val jsonElement = json.parseToJsonElement(serverResponse.body)
       val outputData = jsonElement.jsonObject["outputData"]
-        val outputDataString = outputData?.let { json.encodeToString(outputData) }
+      val outputDataString = outputData?.let { json.encodeToString(outputData) }
 
-        // If an error occurred locally, we want to return it to the caller; so we complete the
-        // transaction with the server but we ignore subsequent errors, as they are likely to be
-        // just noise and only the "root" error is relevant to the user. But we include any payload
-        // the server might have attached, so the caller can decide what to do...
-        lastError?.let {
-            return KeypleResult.Failure(
-                status = makeStatusCode(it),
-                message = it.message!!,
-                data = outputDataString
-            )
-        }
+      // If an error occurred locally, we want to return it to the caller; so we complete the
+      // transaction with the server but we ignore subsequent errors, as they are likely to be
+      // just noise and only the "root" error is relevant to the user. But we include any payload
+      // the server might have attached, so the caller can decide what to do...
+      lastError?.let {
+        return KeypleResult.Failure(
+            status = makeStatusCode(it), message = it.message!!, data = outputDataString)
+      }
       return KeypleResult.Success(outputDataString)
     } catch (ex: Exception) {
       lastError?.let {
@@ -320,8 +342,7 @@ class KeypleTerminal(
       // No previous error, so we return the current one
       when (ex) {
         is ServerIOException -> {
-          return KeypleResult.Failure(status = Status.NETWORK_ERROR,
-              message = ex.message!!)
+          return KeypleResult.Failure(status = Status.NETWORK_ERROR, message = ex.message!!)
         }
         is CardIOException -> {
           return KeypleResult.Failure(status = Status.INTERNAL_ERROR, message = ex.message!!)
@@ -354,8 +375,7 @@ class KeypleTerminal(
       null
     } else {
       json.encodeToJsonElement(
-          ProcessedCardSelectionScenario(json.encodeToString(cardSelectResponses))
-      )
+          ProcessedCardSelectionScenario(json.encodeToString(cardSelectResponses)))
     }
   }
 
@@ -366,7 +386,7 @@ class KeypleTerminal(
     return json.encodeToJsonElement(inputSerializer, inputData)
   }
 
-  private fun transmitCardRequest(message: MessageDTO): String {
+  private fun transmitCardRequest(message: MessageDto): String {
     val transmitCardRequestsCmdBody: TransmitCardRequestCmdBody =
         json.decodeFromString(message.body)
     val cardRequest = transmitCardRequestsCmdBody.parameters.cardRequest
@@ -390,7 +410,7 @@ class KeypleTerminal(
     return json.encodeToString(TransmitCardRequestRespBody(result = cardResponse))
   }
 
-  private fun transmitCardSelectionRequests(message: MessageDTO): String {
+  private fun transmitCardSelectionRequests(message: MessageDto): String {
     val transmitCardSelectionRequestsCmdBody: TransmitCardSelectionRequestsCmdBody =
         json.decodeFromString(message.body)
     val cardSelectionResponses = mutableListOf<CardSelectionResponse>()

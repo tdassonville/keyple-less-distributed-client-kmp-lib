@@ -11,29 +11,28 @@
  ************************************************************************************** */
 package org.eclipse.keyple.interop.jsonapi.client.spi
 
-import org.eclipse.keyple.interop.jsonapi.client.protocol.MessageDTO
-
-class ServerIOException(msg: String) : Exception(msg)
+import org.eclipse.keyple.interop.jsonapi.client.api.MessageDto
+import org.eclipse.keyple.interop.jsonapi.client.api.ServerIOException
 
 /**
  * The network transmission abstraction used to communicate with a Keyple server. See
  * [SimpleHttpNetworkClient](https://github.com/calypsonet/keyple-demo-ticketing-reloading-remote/blob/main/client/kmp/composeApp/src/commonMain/kotlin/org/calypsonet/keyple/demo/reload/remote/network/SimpleHttpNetworkClient.kt)
  * for an example implementation using Ktor with HTTP basic-auth. If you have more constraints, for
- * authentication for example, use this interface and implement your own authentication logics.
+ * authentication, for example, use this interface and implement your own authentication logics.
  *
  * @since 1.0.0
  */
 interface SyncNetworkClient {
 
   /**
-   * Sends the [MessageDTO] payload to the server and waits asynchronously for the next [MessageDTO]
+   * Sends the [MessageDto] payload to the server and waits asynchronously for the next [MessageDto]
    * the server asks us to process.
    *
    * @param message The request message to be sent to the counterpart.
-   * @return A list containing a single [MessageDTO] object.
+   * @return A list containing a single [MessageDto] object.
    * @throws ServerIOException If an I/O error occurs while communicating with the server.
    * @since 1.0.0
    */
   @Throws(ServerIOException::class, kotlin.coroutines.cancellation.CancellationException::class)
-  suspend fun sendRequest(message: MessageDTO): List<MessageDTO>
+  suspend fun sendRequest(message: MessageDto): List<MessageDto>
 }

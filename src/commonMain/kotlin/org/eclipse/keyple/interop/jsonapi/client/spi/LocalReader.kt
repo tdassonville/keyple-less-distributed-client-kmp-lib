@@ -11,18 +11,18 @@
  ************************************************************************************** */
 package org.eclipse.keyple.interop.jsonapi.client.spi
 
-class ReaderIOException(message: String) : Exception(message)
-
-class CardIOException(message: String) : Exception(message)
+import org.eclipse.keyple.interop.jsonapi.client.api.CardIOException
+import org.eclipse.keyple.interop.jsonapi.client.api.ReaderIOException
 
 /**
  * Local NFC reader abstraction. We provide a Kotlin Multiplatform implementation compatible with
- * iOS, Android and JVM based desktops using a PCSC reader (Windows, macOS, linux). You can provide
+ * iOS, Android and JVM-based desktops using a PCSC reader (Windows, macOS, linux). You can provide
  * your own version or support different hardware by implementing this interface.
  *
  * @since 1.0.0
  */
 interface LocalReader {
+
   /**
    * @returns the name of this reader (mostly indicative)
    * @since 1.0.0
@@ -31,11 +31,11 @@ interface LocalReader {
 
   /**
    * Used to set the scan instructions to the user, for applicable NFC readers. Main usage is for
-   * iOS: the provided msg is displayed in the iOS system-driven NFC popup
+   * iOS: the provided message is displayed in the iOS system-driven NFC popup
    *
    * @since 1.0.0
    */
-  fun setScanMessage(msg: String)
+  fun setScanMessage(message: String)
 
   /**
    * Suspends until a card is detected.
@@ -115,7 +115,7 @@ interface LocalReader {
   /**
    * Releases the reader and safely stops any ongoing NFC polling operations.
    *
-   * This method should be called when the reader is no longer needed, to clean up system resources
+   * This method should be called when the reader is no longer needed to clean up system resources
    * and stop background processes such as card detection or polling loops.
    *
    * Implementations must ensure that the reader is left in a clean and reusable state after this

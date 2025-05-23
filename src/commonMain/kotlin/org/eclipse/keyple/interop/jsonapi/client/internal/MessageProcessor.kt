@@ -1,5 +1,5 @@
 /* **************************************************************************************
- * Copyright (c) 2024 Calypso Networks Association https://calypsonet.org/
+ * Copyright (c) 2025 Calypso Networks Association https://calypsonet.org/
  *
  * See the NOTICE file(s) distributed with this work for additional information
  * regarding copyright ownership.
@@ -9,18 +9,26 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.interop.jsonapi.client.protocol
+package org.eclipse.keyple.interop.jsonapi.client.internal
 
 import kotlin.experimental.or
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-
-private const val SW_6100: Int = 0x6100
-private const val SW_6C00: Int = 0x6C00
-private const val SW1_MASK: Int = 0xFF00
-private const val SW2_MASK: Int = 0x00FF
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.ApduRequest
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.CardSelector
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.FileControlInformation
+import org.eclipse.keyple.interop.jsonapi.client.internal.command.FileOccurrence
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.ApduResponse
+import org.eclipse.keyple.interop.jsonapi.client.internal.response.IsCardPresentRespBody
 
 internal class MessageProcessor(private val json: Json) {
+
+  private companion object {
+    private const val SW_6100: Int = 0x6100
+    private const val SW_6C00: Int = 0x6C00
+    private const val SW1_MASK: Int = 0xFF00
+    private const val SW2_MASK: Int = 0x00FF
+  }
 
   fun isCardPresent(): String {
     // Here we always return "card present" as the flow imposed by this plugin makes it mandatory to

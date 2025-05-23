@@ -9,22 +9,14 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  ************************************************************************************** */
-package org.eclipse.keyple.interop.jsonapi.client.protocol
+package org.eclipse.keyple.interop.jsonapi.client.internal.command
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class DefaultCardSelection(val cardSelectionRequest: CardSelectionRequest)
-
-@Serializable
-internal data class CardSelectionScenario(
-    val multiSelectionProcessing: MultiSelectionProcessing,
-    val channelControl: ChannelControl,
-    val cardSelectors: Array<CardSelector>,
-    val defaultCardSelections: Array<DefaultCardSelection>
-)
-
-@Serializable
-internal data class ProcessedCardSelectionScenario(
-    val processedCardSelectionScenarioJsonString: String
-)
+internal enum class FileControlInformation {
+  FCI,
+  FCP,
+  FMD,
+  NO_RESPONSE
+}

@@ -1,0 +1,150 @@
+@startuml
+title
+    Keyple - keyple-interop-jsonapi-client-kmp-lib - 1.0.+ (2025-05-21)
+end title
+
+' == THEME ==
+
+'Couleurs issues de : https://htmlcolorcodes.com/fr/tableau-de-couleur/tableau-de-couleur-design-plat/
+!define C_GREY1 F8F9F9
+!define C_GREY2 F2F3F4
+!define C_GREY3 E5E7E9
+!define C_GREY4 D7DBDD
+!define C_GREY5 CACFD2
+!define C_GREY6 BDC3C7
+!define C_LINK 3498DB
+!define C_USE 27AE60
+!define C_THROW 2C3E50
+
+' -- Styles that don't work with new version of plantuml --
+skinparam stereotypeABorderColor #A9DCDF
+skinparam stereotypeIBorderColor #B4A7E5
+skinparam stereotypeCBorderColor #ADD1B2
+skinparam stereotypeEBorderColor #EB93DF
+' -- END --
+
+skinparam ClassBorderThickness 2
+skinparam ArrowThickness 2
+
+' Yellow
+skinparam ClassBackgroundColor #FEFECE
+skinparam ClassBorderColor #D4AC0D
+' Red
+skinparam ClassBackgroundColor<<red>> #FDEDEC
+skinparam ClassBorderColor<<red>> #E74C3C
+hide <<red>> stereotype
+' Purple
+skinparam ClassBackgroundColor<<purple>> #F4ECF7
+skinparam ClassBorderColor<<purple>> #8E44AD
+hide <<purple>> stereotype
+' blue
+skinparam ClassBackgroundColor<<blue>> #EBF5FB
+skinparam ClassBorderColor<<blue>> #3498DB
+hide <<blue>> stereotype
+' Green
+skinparam ClassBackgroundColor<<green>> #E9F7EF
+skinparam ClassBorderColor<<green>> #27AE60
+hide <<green>> stereotype
+' Grey
+skinparam ClassBackgroundColor<<grey>> #EAECEE
+skinparam ClassBorderColor<<grey>> #2C3E50
+hide <<grey>> stereotype
+
+' == CONTENT ==
+
+package "org.eclipse.keyple.interop.jsonapi.client" as root {
+
+package "api" as api {
+    +class KeypleTerminal {
+        +KeypleTerminal(\n\t**private val** reader: LocalReader,\n\t**private val** clientId: String,\n\t**private val** networkClient: SyncNetworkClient,\n\tcardSelectionScenarioJsonString: String = ""\n)
+
+        +setCardSelectionScenarioJsonString(cardSelectionScenarioJsonString: String)
+        +setScanMessage(message: String)
+
+        +**suspend** waitForCard(): Boolean
+        +waitForCard(onCardDetected: () -> Unit)
+
+        +**suspend** executeRemoteService(\n\tserviceId: String,\n\tinputData: String? = null\n): KeypleResult<String?>
+
+        +**suspend** <T, R> executeRemoteService(\n\tserviceId: String,\n\tinputData: T? = null,\n\tinputSerializer: KSerializer<T>,\n\toutputDeserializer: KSerializer<R>\n): KeypleResult<R?>
+
+        +release()
+    }
+    +class "**data** MessageDto" as MessageDto {
+        +MessageDto(\n\t**var** apiLevel: Int = API_LEVEL,\n\t**var** sessionId: String,\n\t**var** action: String,\n\t**var** clientNodeId: String,\n\t**var** serverNodeId: String? = null,\n\t**var** localReaderName: String? = null,\n\t**var** remoteReaderName: String? = null,\n\t**var** body: String\n)
+    }
+    +class "**sealed** KeypleResult" as KeypleResult<T> {
+    }
+    +class "**data** Success" as Success<T> extends KeypleResult {
+        +Success(\n\t**val** data: T\n)
+    }
+    +class "**data** Failure" as Failure<T> extends KeypleResult {
+        +Failure(\n\t**val** status: Status,\n\t**val** message: String,\n\t**val** data: T? = null\n)
+    }
+    +enum Status {
+        UNKNOWN_ERROR
+        TAG_LOST
+        SERVER_ERROR
+        NETWORK_ERROR
+        READER_ERROR
+        INTERNAL_ERROR
+    }
+}
+package "spi" as spi {
+    +interface LocalReader <<red>> {
+        +getName(): String
+        +setScanMessage(message: String)
+
+        +**suspend** waitForCardPresent(): Boolean
+        +startCardDetection(onCardDetected: () -> Unit)
+
+        +openPhysicalChannel()
+        +closePhysicalChannel()
+
+        +getPowerOnData(): String
+        +transmitApdu(commandApdu: ByteArray): ByteArray
+
+        +release()
+    }
+    +interface SyncNetworkClient <<red>> {
+        +**suspend** sendRequest(\n\tmessage: MessageDto\n): List<MessageDto>
+    }
+    +class "<< Exception >>\nReaderIOException" as ReaderIOException {
+        +ReaderIOException(message: String)
+    }
+    +class "<< Exception >>\nCardIOException" as CardIOException {
+        +CardIOException(message: String)
+    }
+    +class "<< Exception >>\nServerIOException" as ServerIOException {
+        +ServerIOException(message: String)
+    }
+}
+
+}
+
+' Associations
+
+KeypleTerminal o-- "1" LocalReader #C_LINK
+KeypleTerminal o-- "1" SyncNetworkClient #C_LINK
+KeypleTerminal .left.> KeypleResult #C_LINK : provide >
+
+Failure ..> Status #C_LINK : provide >
+
+LocalReader ..> ReaderIOException #C_THROW : throw >
+LocalReader ..> CardIOException #C_THROW : throw >
+
+SyncNetworkClient .left.> MessageDto #C_USE : use >
+SyncNetworkClient .left.> MessageDto #C_LINK : provide >
+SyncNetworkClient ..> ServerIOException #C_THROW : throw >
+
+' == LAYOUT ==
+
+KeypleTerminal -[hidden]- MessageDto
+
+' == STYLE ==
+
+package root #C_GREY1 {}
+package root.api #C_GREY2 {}
+package root.spi #C_GREY2 {}
+
+@enduml
