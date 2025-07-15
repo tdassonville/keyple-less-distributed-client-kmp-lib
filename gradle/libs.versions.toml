@@ -1,25 +1,23 @@
 [versions]
 agp = "8.6.1"
-android-compileSdk = "34"
-android-minSdk = "24"
 coroutines = "1.9.0"
 datetime = "0.6.1"
 kotlin = "2.0.21"
 kotlinxSerialization = "1.7.3"
 napier = "2.7.1"
-dokka = "1.9.10"
-jdk="17"
+spotless = "7.0.4"
+dokka = "1.9.20"
 
 [libraries]
 kotlinx-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "datetime" }
-
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 
 [plugins]
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

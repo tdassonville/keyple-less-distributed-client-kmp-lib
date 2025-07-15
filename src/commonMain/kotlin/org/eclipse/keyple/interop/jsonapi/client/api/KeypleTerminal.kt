@@ -417,7 +417,7 @@ class KeypleTerminal(
     var error: Error? = null
     val nbIterations = transmitCardSelectionRequestsCmdBody.parameters.cardSelectionRequests.size
 
-    for (i in 0 ..< nbIterations) {
+    for (i in 0..<nbIterations) {
       try {
         val cardSelectionResponse =
             processCardSelectionRequest(
@@ -458,7 +458,7 @@ class KeypleTerminal(
     var error: Error? = null
     val nbIterations = scenario.cardSelectors.size
 
-    for (i in 0 ..< nbIterations) {
+    for (i in 0..<nbIterations) {
       try {
         val cardSelectionResponse =
             processCardSelectionRequest(
