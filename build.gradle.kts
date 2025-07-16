@@ -206,9 +206,11 @@ publishing {
   }
 }
 
-signing {
-  if (project.hasProperty("releaseTag")) {
-    useGpgCmd()
-    publishing.publications.withType<MavenPublication>().forEach { sign(it) }
+afterEvaluate {
+  signing {
+    if (project.hasProperty("releaseTag")) {
+      useGpgCmd()
+      publishing.publications.withType<MavenPublication>().forEach { sign(it) }
+    }
   }
 }
