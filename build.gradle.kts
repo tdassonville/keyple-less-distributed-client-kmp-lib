@@ -211,13 +211,14 @@ afterEvaluate {
     if (project.hasProperty("releaseTag")) {
       useGpgCmd()
       publishing.publications.withType<MavenPublication>().forEach { sign(it) }
-      tasks.withType<PublishToMavenRepository>().configureEach {
-        val publicationName = publication?.name
-        if (publicationName != null) {
-          dependsOn(
-              tasks.named("sign${publicationName.replaceFirstChar { it.uppercase() }}Publication"))
-        }
+      // region Fix Gradle warning about signing tasks using publishing task outputs without
+      // explicit dependencies
+      // <https://youtrack.jetbrains.com/issue/KT-46466>
+      tasks.withType<AbstractPublishToMaven>().configureEach {
+        val signingTasks = tasks.withType<Sign>()
+        mustRunAfter(signingTasks)
       }
+      // endregion
     }
   }
 }
