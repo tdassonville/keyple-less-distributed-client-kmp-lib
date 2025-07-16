@@ -153,7 +153,9 @@ afterEvaluate {
 
 publishing {
   publications.withType<MavenPublication>().configureEach {
-    artifact(tasks["dokkaHtmlJar"])
+    if (name.contains("Jvm", ignoreCase = true) || name.contains("Android", ignoreCase = true)) {
+      artifact(tasks["dokkaHtmlJar"])
+    }
     pom {
       name.set(project.findProperty("title") as String)
       description.set(project.findProperty("description") as String)
@@ -204,18 +206,9 @@ publishing {
   }
 }
 
-afterEvaluate {
-  signing {
-    if (project.hasProperty("releaseTag")) {
-      useGpgCmd()
-      publishing.publications.withType<MavenPublication>().forEach { sign(it) }
-      tasks.withType<PublishToMavenRepository>().configureEach {
-        val publicationName = publication?.name
-        if (publicationName != null) {
-          dependsOn(
-              tasks.named("sign${publicationName.replaceFirstChar { it.uppercase() }}Publication"))
-        }
-      }
-    }
+signing {
+  if (project.hasProperty("releaseTag")) {
+    useGpgCmd()
+    publishing.publications.withType<MavenPublication>().forEach { sign(it) }
   }
 }
