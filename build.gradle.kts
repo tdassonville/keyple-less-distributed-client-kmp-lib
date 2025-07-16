@@ -211,6 +211,13 @@ afterEvaluate {
     if (project.hasProperty("releaseTag")) {
       useGpgCmd()
       publishing.publications.withType<MavenPublication>().forEach { sign(it) }
+      tasks.withType<PublishToMavenRepository>().configureEach {
+        val publicationName = publication?.name
+        if (publicationName != null) {
+          dependsOn(
+              tasks.named("sign${publicationName.replaceFirstChar { it.uppercase() }}Publication"))
+        }
+      }
     }
   }
 }
